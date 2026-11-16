@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>رسم تغطية الأنتينا</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  #map{height:84vh;min-height:480px;border-radius:10px}
+  #mapCard.full{position:fixed;inset:0;z-index:9999;border-radius:0;padding:0;border:0}
+  #mapCard.full #map{height:100vh;border-radius:0}
+  #mapCard.full .hint,#mapCard.full .msg{display:none}
+  .lbl{color:#fff;font:600 12px system-ui;text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap;transform:translate(-50%,-50%);direction:ltr}
+  .lbl.big{font-size:16px}.lbl.g{color:#7ee787}.lbl.r{font-weight:400;font-size:11px;color:#ddd}
+  .leaflet-container{direction:ltr}
+  :root{--bg:#0f1419;--panel:#182029;--line:#2a3542;--txt:#e6edf3;--mut:#8b98a5;--acc:#3fb950;--acc2:#58a6ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+  .wrap{max-width:1600px;margin:0 auto;padding:14px;display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:860px){.wrap{grid-template-columns:340px 1fr}}
+  h1{font-size:18px;margin:4px 0 2px}
+  .sub{color:var(--mut);font-size:13px;margin:0 0 6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .field{margin-bottom:14px}
+  .field label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
+  .field label b{color:var(--acc);font-variant-numeric:tabular-nums}
+  .hint{font-size:12px;color:var(--mut);margin-top:4px}
+  input[type=range]{width:100%;accent-color:var(--acc)}
+  input[type=number]{width:100%;background:#0d1117;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:9px;font-size:15px;direction:ltr;text-align:left}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .presets button,.btn{background:#21262d;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:13px;cursor:pointer}
+  .presets button.on{background:var(--acc);color:#000;border-color:var(--acc)}
+  .btn.primary{background:var(--acc2);color:#000;border-color:var(--acc2);font-weight:600}
+  #plot{width:100%;height:auto;display:block}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td{padding:6px 4px;border-bottom:1px solid var(--line)}
+  td:last-child{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
+  textarea{width:100%;height:120px;background:#0d1117;color:var(--mut);border:1px solid var(--line);border-radius:8px;font:11px ui-monospace,monospace;direction:ltr;padding:8px}
+  .msg{font-size:12px;color:var(--acc);min-height:16px;margin-top:6px}
+  .tabs{display:flex;gap:6px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>رسم تغطية الأنتينا</h1>
+    <p class="sub">حدد الاتجاه وعرض الحزمة والمدى، والقطاع يتحدث على خريطة الأقمار الصناعية مباشرة.</p>
+
+    <div class="card">
+      <div class="field">
+        <label>عرض الحزمة <b id="bwV"></b></label>
+        <input type="range" id="bw" min="1" max="360" value="30">
+        <div class="presets" id="bwP"></div>
+        <div class="hint" id="bwHint"></div>
+      </div>
+
+      <div class="field">
+        <label>الاتجاه (Azimuth) <b id="azV"></b></label>
+        <input type="range" id="az" min="0" max="359" value="90">
+        <div class="hint">0 = شمال، 90 = شرق، 180 = جنوب، 270 = غرب</div>
+      </div>
+
+      <div class="field">
+        <label>المدى <b id="rgV"></b></label>
+        <input type="range" id="rg" min="1" max="500" value="100">
+        <div class="row" style="margin-top:6px">
+          <input type="number" id="rgN" min="0.1" step="any" value="100">
+          <div class="presets" style="margin:0">
+            <button class="btn" data-d="-10">−10</button>
+            <button class="btn" data-d="10">+10</button>
+          </div>
+        </div>
+        <div class="hint">بالكيلومتر. تقدر تكتب أي رقم في الخانة حتى لو أكبر من 500.</div>
+      </div>
+
+      <div class="field" style="margin-bottom:0">
+        <label>موقع الأنتينا</label>
+        <div class="row">
+          <input type="number" id="lat" step="any" value="24.7136" placeholder="Lat">
+          <input type="number" id="lon" step="any" value="46.6753" placeholder="Lon">
+        </div>
+        <div class="hint">خط العرض / خط الطول (لملف Google Earth والإحداثيات)</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;gap:14px">
+    <div class="card" style="padding:8px" id="mapCard">
+      <div class="msg" id="mapNote" style="color:#d29922;padding:0 4px 6px"></div>
+      <div id="map"></div>
+      <div class="hint" style="padding:6px 4px 0">اضغط على الخريطة أو اسحب النقطة الزرقاء لتغيير موقع الأنتينا. زر ⤢ يرجعك لعرض التغطية كاملة، وزر ⛶ ملء الشاشة (Esc للخروج).</div>
+    </div>
+
+    <div class="card" style="padding:8px" id="plotCard">
+      <svg id="plot" viewBox="0 0 500 500" style="max-height:60vh"></svg>
+      <div class="hint" id="plotNote" style="padding:0 4px"></div>
+    </div>
+    <div class="card">
+      <table>
+        <tr><td>الحافة اليمنى</td><td id="eR"></td></tr>
+        <tr><td>المركز</td><td id="eC"></td></tr>
+        <tr><td>الحافة اليسرى</td><td id="eL"></td></tr>
+        <tr><td>عرض القطاع عند نهاية المدى</td><td id="arc"></td></tr>
+        <tr><td>مساحة التغطية</td><td id="area"></td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="btn on" id="tKml">KML (Google Earth)</button>
+        <button class="btn" id="tGeo">GeoJSON</button>
+        <button class="btn" id="copy" style="margin-inline-start:auto">نسخ</button>
+      </div>
+      <div class="presets" style="margin:0 0 8px">
+        <button class="btn primary" id="dlKml">⬇ تحميل KML</button>
+        <button class="btn primary" id="dlPoly">⬇ تحميل .poly (Mission Planner)</button>
+      </div>
+      <textarea id="out" readonly></textarea>
+      <div class="msg" id="msg"></div>
+      <div class="hint">Mission Planner: في شاشة Flight Plan، كليك يمين على الخريطة ← Map Tool ← KML Overlay واختر ملف KML. ملف .poly تحمّله من قائمة Draw Polygon ← Load Polygon.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const R_EARTH=6371.0088, rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+let fmt='kml';
+
+// نقطة على مسافة واتجاه من نقطة (كرة)
+function dest(lat,lon,brg,km){
+  const d=km/R_EARTH, b=rad(brg), p1=rad(lat), l1=rad(lon);
+  const p2=Math.asin(Math.sin(p1)*Math.cos(d)+Math.cos(p1)*Math.sin(d)*Math.cos(b));
+  const l2=l1+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(p1),Math.cos(d)-Math.sin(p1)*Math.sin(p2));
+  return [deg(p2),((deg(l2)+540)%360)-180];
+}
+const norm=a=>((a%360)+360)%360;
+const f5=n=>n.toFixed(5);
+
+function sectorPoints(lat,lon,az,bw,km){
+  const pts=[], start=az-bw/2, steps=Math.max(8,Math.ceil(bw));
+  if(bw<360) pts.push([lat,lon]);
+  for(let i=0;i<=steps;i++) pts.push(dest(lat,lon,start+bw*i/steps,km));
+  pts.push(pts[0]);
+  return pts;
+}
+
+function niceStep(km){
+  const raw=km/4, p=Math.pow(10,Math.floor(Math.log10(raw))), m=raw/p;
+  return (m<1.5?1:m<3.5?2.5:m<7.5?5:10)*p;
+}
+
+function draw(az,bw,km){
+  const c=250, R=200, s=$('plot');
+  const P=(a,r)=>[c+r*Math.sin(rad(a)), c-r*Math.cos(rad(a))];
+  let g='';
+  // حلقات المسافة
+  const step=niceStep(km);
+  for(let v=step; v<=km+1e-9; v+=step){
+    const r=R*v/km;
+    g+=`<circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#2a3542"/>`;
+    g+=`<text x="${c+3}" y="${c-r-3}" fill="#8b98a5" font-size="11" direction="ltr">${+v.toFixed(2)} km</text>`;
+  }
+  g+=`<circle cx="${c}" cy="${c}" r="${R}" fill="none" stroke="#3a4552"/>`;
+  // خطوط الاتجاهات
+  for(let a=0;a<360;a+=30){
+    const [x,y]=P(a,R+4), [tx,ty]=P(a,R+20);
+    g+=`<line x1="${c}" y1="${c}" x2="${x}" y2="${y}" stroke="#1f2933"/>`;
+    const lab={0:'N',90:'E',180:'S',270:'W'}[a]??a+'°';
+    g+=`<text x="${tx}" y="${ty+4}" fill="${a%90?'#5b6875':'#e6edf3'}" font-size="${a%90?11:14}" font-weight="${a%90?400:700}" text-anchor="middle">${lab}</text>`;
+  }
+  // القطاع
+  let path;
+  if(bw>=360){ path=`<circle cx="${c}" cy="${c}" r="${R}" fill="rgba(63,185,80,.25)" stroke="#3fb950" stroke-width="2"/>`; }
+  else{
+    const [x1,y1]=P(az-bw/2,R), [x2,y2]=P(az+bw/2,R);
+    path=`<path d="M${c},${c} L${x1},${y1} A${R},${R} 0 ${bw>180?1:0} 1 ${x2},${y2} Z" fill="rgba(63,185,80,.25)" stroke="#3fb950" stroke-width="2"/>`;
+  }
+  g+=path;
+  // خط المركز
+  const [cx2,cy2]=P(az,R);
+  g+=`<line x1="${c}" y1="${c}" x2="${cx2}" y2="${cy2}" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  // تسميات الزوايا
+  if(bw<360){
+    const [lx,ly]=P(az-bw/2,R*0.55), [rx,ry]=P(az+bw/2,R*0.55);
+    g+=`<text x="${lx}" y="${ly}" fill="#3fb950" font-size="12" text-anchor="middle" direction="ltr">${norm(az-bw/2).toFixed(1)}°</text>`;
+    g+=`<text x="${rx}" y="${ry}" fill="#3fb950" font-size="12" text-anchor="middle" direction="ltr">${norm(az+bw/2).toFixed(1)}°</text>`;
+  }
+  g+=`<circle cx="${c}" cy="${c}" r="5" fill="#58a6ff"/>`;
+  s.innerHTML=g;
+}
+
+function kml(pts,az,bw,km){
+  const coords=pts.map(p=>`${f5(p[1])},${f5(p[0])},0`).join(' ');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+<name>Antenna ${bw}deg @ ${az}deg, ${km}km</name>
+<Style id="s"><LineStyle><color>ff50b93f</color><width>2</width></LineStyle><PolyStyle><color>5550b93f</color></PolyStyle></Style>
+<Placemark><name>Antenna</name><Point><coordinates>${f5(pts[0][1])},${f5(pts[0][0])},0</coordinates></Point></Placemark>
+<Placemark><name>Coverage ${bw}° / ${km} km</name><styleUrl>#s</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+</Document></kml>`;
+}
+function geojson(pts,az,bw,km){
+  return JSON.stringify({type:"Feature",properties:{azimuth:az,beamwidth:bw,range_km:km},
+    geometry:{type:"Polygon",coordinates:[pts.map(p=>[+f5(p[1]),+f5(p[0])])]}});
+}
+
+function update(){
+  const bw=+$('bw').value, az=+$('az').value;
+  let km=parseFloat($('rgN').value); if(!(km>0)) km=1;
+  const lat=parseFloat($('lat').value)||0, lon=parseFloat($('lon').value)||0;
+  $('bwV').textContent=bw+'°'; $('azV').textContent=az+'°'; $('rgV').textContent=km+' كم';
+  $('bwHint').textContent= bw>=360 ? 'تغطية كاملة 360°' : `${(bw/2).toFixed(1)}° يمين + ${(bw/2).toFixed(1)}° يسار`;
+  document.querySelectorAll('#bwP button').forEach(b=>b.classList.toggle('on',+b.dataset.v===bw));
+  const e=(a)=>{const p=dest(lat,lon,a,km);return `${norm(a).toFixed(1)}° → ${f5(p[0])}, ${f5(p[1])}`};
+  $('eR').textContent=e(az+bw/2); $('eC').textContent=e(az); $('eL').textContent=e(az-bw/2);
+  $('arc').textContent= bw>=360?'—': `${(2*km*Math.sin(rad(Math.min(bw,180)/2))).toFixed(1)} km (وتر) · ${(km*rad(bw)).toFixed(1)} km (قوس)`;
+  $('area').textContent=`${(Math.PI*km*km*bw/360).toLocaleString('en',{maximumFractionDigits:1})} km²`;
+  draw(az,bw,km);
+  const pts=sectorPoints(lat,lon,az,bw,km);
+  if(mapOK) try{drawMap(lat,lon,az,km,pts)}catch(e){console.error(e)}
+  $('out').value= fmt==='kml'?kml(pts,az,bw,km):geojson(pts,az,bw,km);
+}
+
+// ===== الخريطة =====
+let map,sector,axis,rings,compass,ant,mapOK=false;
+let lastKey='', noFit=false;
+function initMap(){
+map=L.map('map',{zoomControl:true,maxZoom:21});
+if(getComputedStyle($('map')).position!=='relative') throw 'no-css';
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:21,maxNativeZoom:17,attribution:'Imagery © Esri'}).addTo(map);
+const labels=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:21,maxNativeZoom:17}).addTo(map);
+const streets=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:21,maxNativeZoom:19,attribution:'© OpenStreetMap'});
+L.control.layers({'ستالايت':sat,'شوارع':streets},{'أسماء المدن':labels}).addTo(map);
+L.control.scale({imperial:false}).addTo(map);
+const FitCtl=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar');
+  b.href='#';b.title='عرض التغطية كاملة';b.innerHTML='⤢';b.style.cssText='display:block;width:34px;height:34px;line-height:34px;text-align:center;background:#fff;color:#000;font-size:20px;text-decoration:none';
+  L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);L.DomEvent.stopPropagation(e);fitAll()});return b}});
+new FitCtl().addTo(map);
+const FullCtl=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar');
+  b.href='#';b.title='ملء الشاشة';b.innerHTML='⛶';b.style.cssText='display:block;width:34px;height:34px;line-height:34px;text-align:center;background:#fff;color:#000;font-size:20px;text-decoration:none';
+  L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);L.DomEvent.stopPropagation(e);$('mapCard').classList.toggle('full');setTimeout(()=>map.invalidateSize(),50)});return b}});
+new FullCtl().addTo(map);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('mapCard').classList.contains('full')){$('mapCard').classList.remove('full');setTimeout(()=>map.invalidateSize(),50)}});
+sector=L.polygon([],{color:'#3fb950',weight:2,fillOpacity:.25}).addTo(map);
+axis=L.polyline([],{color:'#58a6ff',weight:2,dashArray:'6 6'}).addTo(map);
+rings=L.layerGroup().addTo(map);
+compass=L.layerGroup().addTo(map);
+ant=L.marker([0,0],{draggable:true,icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#58a6ff;border:3px solid #fff;box-shadow:0 0 6px #000"></div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(map);
+let tileErr=0,tileOK=false;
+sat.on('tileload',()=>{tileOK=true});
+sat.on('tileerror',()=>{if(tileOK)return;if(++tileErr===3){$('plotCard').style.display='';}if(tileErr===3)$('mapNote').textContent='صور الستالايت ما تتحمل هنا. افتح الملف في متصفح Chrome أو Edge مع إنترنت عشان تطلع الخريطة. الرسم اللي تحت شغال عادي.'});
+map.on('click',e=>setPos(e.latlng));
+ant.on('dragend',()=>setPos(ant.getLatLng()));
+mapOK=true;
+$('plotCard').style.display='none';
+}
+function drawMap(lat,lon,az,km,pts){
+  ant.setLatLng([lat,lon]);
+  sector.setLatLngs(pts);
+  axis.setLatLngs([[lat,lon],dest(lat,lon,az,km)]);
+  rings.clearLayers(); compass.clearLayers();
+  const lab=(ll,txt,cls)=>L.marker(ll,{interactive:false,icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="lbl ${cls||''}">${txt}</div>`})}).addTo(compass);
+  for(let a=0;a<360;a+=30){
+    L.polyline([[lat,lon],dest(lat,lon,a,km*1.08)],{color:'#fff',weight:1,opacity:.25,interactive:false}).addTo(compass);
+    const nm={0:'N',90:'E',180:'S',270:'W'}[a];
+    lab(dest(lat,lon,a,km*1.16), nm||a+'°', nm?'big':'');
+  }
+  const bwNow=+$('bw').value;
+  if(bwNow<360){
+    lab(dest(lat,lon,az-bwNow/2,km*0.6), norm(az-bwNow/2).toFixed(1)+'°','g');
+    lab(dest(lat,lon,az+bwNow/2,km*0.6), norm(az+bwNow/2).toFixed(1)+'°','g');
+  }
+  lab(dest(lat,lon,az,km*0.45), `${az}° · ${bwNow}° · ${km} km`,'g');
+  const st=niceStep(km);
+  for(let v=st;v<=km+1e-9;v+=st) {const ring=[];for(let a=0;a<=360;a+=2)ring.push(dest(lat,lon,a,v));L.polyline(ring,{color:'#fff',weight:1,opacity:.35,interactive:false}).addTo(rings); lab(dest(lat,lon,0,v),+v.toFixed(2)+' km','r');}
+  const key=lat+','+lon+','+km;
+  if(key!==lastKey && !noFit) map.fitBounds(L.latLng(lat,lon).toBounds(km*2500),{padding:[10,10]});
+  lastKey=key; noFit=false;
+}
+function fitAll(){const la=parseFloat($('lat').value)||0,lo=parseFloat($('lon').value)||0,k=parseFloat($('rgN').value)||1;map.fitBounds(L.latLng(la,lo).toBounds(k*2500),{padding:[10,10]});}
+function setPos(ll){ $('lat').value=ll.lat.toFixed(5); $('lon').value=ll.lng.toFixed(5); noFit=true; update(); }
+
+try{ if(window.L) initMap(); else throw 0; }catch(e){ $('mapCard').style.display='none'; $('plotNote').textContent='خريطة الستالايت تشتغل لما تفتح ملف sector_map.html في متصفح مع إنترنت. هنا يظهر الرسم بس.'; }
+
+// presets
+[10,15,30,40,60,90,120,360].forEach(v=>{
+  const b=document.createElement('button'); b.textContent=v+'°'; b.dataset.v=v;
+  b.onclick=()=>{$('bw').value=v;update()}; $('bwP').appendChild(b);
+});
+$('bw').oninput=update; $('az').oninput=update;
+['lat','lon'].forEach(id=>$(id).oninput=update);
+$('rg').oninput=()=>{$('rgN').value=$('rg').value;update()};
+$('rgN').oninput=()=>{const v=parseFloat($('rgN').value); if(v>0&&v<=500)$('rg').value=v; update()};
+document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{
+  const v=Math.max(1,(parseFloat($('rgN').value)||0)+(+b.dataset.d)); $('rgN').value=v; if(v<=500)$('rg').value=v; update();
+});
+$('tKml').onclick=()=>{fmt='kml';$('tKml').classList.add('on');$('tGeo').classList.remove('on');update()};
+$('tGeo').onclick=()=>{fmt='geo';$('tGeo').classList.add('on');$('tKml').classList.remove('on');update()};
+function fname(ext){return `antenna_az${$('az').value}_bw${$('bw').value}_${parseFloat($('rgN').value)||1}km.${ext}`}
+function save(text,name,type){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+  $('msg').textContent='تم التحميل: '+name; setTimeout(()=>$('msg').textContent='',3000);
+}
+function curPts(){const bw=+$('bw').value,az=+$('az').value,km=parseFloat($('rgN').value)||1;
+  return {bw,az,km,pts:sectorPoints(parseFloat($('lat').value)||0,parseFloat($('lon').value)||0,az,bw,km)}}
+$('dlKml').onclick=()=>{const c=curPts(); save(kml(c.pts,c.az,c.bw,c.km),fname('kml'),'application/vnd.google-earth.kml+xml')};
+$('dlPoly').onclick=()=>{const c=curPts(); const ring=c.pts.slice(0,-1);
+  save('#saved by Mission Planner\r\n'+ring.map(p=>`${p[0].toFixed(7)} ${p[1].toFixed(7)}`).join('\r\n')+'\r\n',fname('poly'),'text/plain')};
+$('copy').onclick=async()=>{
+  try{await navigator.clipboard.writeText($('out').value);$('msg').textContent='تم النسخ ✓'}
+  catch{ $('out').select(); $('msg').textContent='حدد النص وانسخه يدويًا'; }
+  setTimeout(()=>$('msg').textContent='',2500);
+};
+update();
+</script>
+</body>
+</html>
