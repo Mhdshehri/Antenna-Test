@@ -121,15 +121,15 @@
       </div>
       <div class="field">
         <label>ارتفاع الدرون فوق الأرض <b id="altV"></b></label>
-        <input type="range" id="alt" min="0" max="1500" step="5" value="120">
+        <input type="range" id="alt" min="0" max="5000" step="10" value="400">
         <div class="row" style="margin-top:6px">
-          <input type="number" id="altN" min="0" step="any" value="120">
+          <input type="number" id="altN" min="0" step="any" value="400">
           <div class="presets" style="margin:0">
-            <button class="btn" data-a="-10">−10</button>
-            <button class="btn" data-a="10">+10</button>
+            <button class="btn" data-a="-50">−50</button>
+            <button class="btn" data-a="50">+50</button>
           </div>
         </div>
-        <div class="hint">بالمتر فوق سطح الأرض اللي تحت الدرون (AGL).</div>
+        <div class="hint">بالقدم (ft) فوق سطح الأرض اللي تحت الدرون (AGL).</div>
       </div>
       <div class="field">
         <label>ارتفاع الأنتينا عن الأرض (متر)</label>
@@ -137,12 +137,12 @@
       </div>
       <div class="field" style="margin-bottom:10px">
         <label style="align-items:center">داخل قطاع الأنتينا بس
-          <input type="checkbox" id="losSector" checked style="width:20px;height:20px;accent-color:var(--acc)"></label>
+          <input type="checkbox" id="losSector" style="width:20px;height:20px;accent-color:var(--acc)"></label>
       </div>
       <button class="btn primary" id="losGo" style="width:100%">احسب التضاريس</button>
       <div class="hint" id="losStat" style="margin-top:8px"></div>
       <div class="hint" id="losInfo" style="margin-top:4px;color:var(--txt)"></div>
-      <div class="hint" style="margin-top:8px"><span style="color:#3fb950">■</span> يشوف الدرون &nbsp; <span style="color:#f85149">■</span> محجوب بالتضاريس</div>
+      <div class="hint" style="margin-top:8px"><span style="color:#58a6ff">■</span> الأماكن اللي الأنتينا تشوف فيها الدرون</div>
     </div>
 
     <div class="card" style="margin-top:14px" id="offCard">
@@ -418,7 +418,7 @@ async function losCompute(){
   losBusy=false; $('losGo').disabled=false;
 }
 function losVisibility(){
-  const {N,ds,G,g0,vis}=LOS, A=Math.max(0,parseFloat($('altN').value)||0), H0=g0+Math.max(0,parseFloat($('mast').value)||0);
+  const {N,ds,G,g0,vis}=LOS, A=Math.max(0,parseFloat($('altN').value)||0)*0.3048, H0=g0+Math.max(0,parseFloat($('mast').value)||0);
   for(let r=0;r<NRAY;r++){ let m=-Infinity; const o=r*N; vis[o]=1;
     for(let i=1;i<N;i++){ const d=i*ds, gt=G[o+i]; vis[o+i]=((gt+A-H0)/d>=m)?1:0; const s=(gt-H0)/d; if(s>m)m=s; } }
 }
@@ -436,7 +436,7 @@ function losRender(){
       const brg=norm(deg(Math.atan2(dx,dy)));
       if(onlySec){ let df=Math.abs(norm(brg-az)); if(df>180)df=360-df; if(df>bw/2) continue; }
       const r=Math.round(brg*NRAY/360)%NRAY, i=Math.min(N-1,Math.round(dist/ds)), v=vis[r*N+i], k=(py*W+px)*4;
-      tot++; if(v){ok++; D[k]=63;D[k+1]=185;D[k+2]=80;D[k+3]=120;} else {D[k]=248;D[k+1]=81;D[k+2]=73;D[k+3]=70;} } }
+      tot++; if(v){ok++; D[k]=56;D[k+1]=139;D[k+2]=253;D[k+3]=105;} } }
   cx.putImageData(img,0,0);
   losOverlay=L.imageOverlay(cv.toDataURL(),b,{interactive:false}).addTo(map); losOverlay.bringToBack();
   // على خط الاتجاه
@@ -554,13 +554,13 @@ $('copy').onclick=async()=>{
 update();
 
 // LOS UI
-function setAlt(v){ v=Math.max(0,v); $('altN').value=v; if(v<=1500)$('alt').value=v; $('altV').textContent=v+' م'; losRun(); }
+function setAlt(v){ v=Math.max(0,v); $('altN').value=v; if(v<=5000)$('alt').value=v; $('altV').textContent=v+' ft'; losRun(); }
 $('alt').oninput=()=>setAlt(+$('alt').value);
-$('altN').oninput=()=>{const v=parseFloat($('altN').value); if(v>=0){ if(v<=1500)$('alt').value=v; $('altV').textContent=v+' م'; losRun(); }};
+$('altN').oninput=()=>{const v=parseFloat($('altN').value); if(v>=0){ if(v<=5000)$('alt').value=v; $('altV').textContent=v+' ft'; losRun(); }};
 document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>setAlt((parseFloat($('altN').value)||0)+(+b.dataset.a)));
 $('mast').oninput=losRun; $('losOn').onchange=losRender; $('losSector').onchange=losRender;
 $('losGo').onclick=losCompute;
-$('altV').textContent=$('altN').value+' م';
+$('altV').textContent=$('altN').value+' ft';
 if(!mapOK) $('losCard').style.display='none';
 
 // offline UI
