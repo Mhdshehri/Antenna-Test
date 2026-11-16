@@ -117,7 +117,7 @@
       <div class="field" style="margin-bottom:10px">
         <label style="align-items:center">مدى الرؤية بالارتفاع (Up in the air)
           <input type="checkbox" id="losOn" checked style="width:20px;height:20px;accent-color:var(--acc)"></label>
-        <div class="hint">يلوّن الأماكن اللي الأنتينا تشوف فيها الدرون بخط نظر مباشر، على حسب التضاريس.</div>
+        <div class="hint">يلوّن الأماكن اللي الأنتينا تشوف فيها الدرون بخط نظر مباشر، ويتحدث لحاله وأنت تحرك الأنتينا أو الارتفاع أو المدى.</div>
       </div>
       <div class="field">
         <label>ارتفاع الدرون فوق الأرض <b id="altV"></b></label>
@@ -139,7 +139,7 @@
         <label style="align-items:center">داخل قطاع الأنتينا بس
           <input type="checkbox" id="losSector" style="width:20px;height:20px;accent-color:var(--acc)"></label>
       </div>
-      <button class="btn primary" id="losGo" style="width:100%">احسب التضاريس</button>
+      <button class="btn" id="losGo" style="width:100%">↻ إعادة الحساب</button>
       <div class="hint" id="losStat" style="margin-top:8px"></div>
       <div class="hint" id="losInfo" style="margin-top:4px;color:var(--txt)"></div>
       <div class="hint" style="margin-top:8px"><span style="color:#58a6ff">■</span> الأماكن اللي الأنتينا تشوف فيها الدرون</div>
@@ -378,33 +378,37 @@ async function prefetch(){
 const DEM_URL=(z,x,y)=>`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
 const K_REF=4/3, RE=6371008.8, NRAY=720;
 let LOS=null, losOverlay=null, losBusy=false, losTimer=0;
+const demMem=new Map();
 async function demTile(z,x,y){
-  const k='dem/'+z+'/'+x+'/'+y; let blob=await tGet(k);
+  const k='dem/'+z+'/'+x+'/'+y; if(demMem.has(k)) return demMem.get(k); let blob=await tGet(k);
   if(!blob){ if(OFF) return null; const r=await fetch(DEM_URL(z,x,y)); if(!r.ok) throw new Error('dem '+r.status); blob=await r.blob(); try{await tPut(k,blob)}catch{} }
   const bmp=await createImageBitmap(blob); const c=document.createElement('canvas'); c.width=c.height=256;
   const cx=c.getContext('2d'); cx.drawImage(bmp,0,0); const d=cx.getImageData(0,0,256,256).data; const e=new Float32Array(65536);
   for(let i=0;i<65536;i++) e[i]=d[i*4]*256+d[i*4+1]+d[i*4+2]/256-32768;
+  if(demMem.size>400) demMem.clear(); demMem.set(k,e);
   return e;
 }
 function demZoom(km){ for(let z=13;z>=6;z--){ const tileKm=40075*Math.cos(0.4)/2**z; if(Math.pow(Math.ceil(2*km/tileKm)+1,2)<=64) return z; } return 6; }
+let losPending=false;
 async function losCompute(){
-  if(losBusy) return; const lat=parseFloat($('lat').value)||0, lon=parseFloat($('lon').value)||0, km=parseFloat($('rgN').value)||1;
+  if(losBusy){ losPending=true; return; } const lat=parseFloat($('lat').value)||0, lon=parseFloat($('lon').value)||0, km=parseFloat($('rgN').value)||1;
   losBusy=true; $('losGo').disabled=true;
   try{
     const z=demZoom(km), b={n:dest(lat,lon,0,km)[0],s:dest(lat,lon,180,km)[0],e:dest(lat,lon,90,km)[1],w:dest(lat,lon,270,km)[1]};
     const x1=lon2x(b.w,z),x2=lon2x(b.e,z),y1=lat2y(b.n,z),y2=lat2y(b.s,z), list=[];
     for(let x=x1;x<=x2;x++)for(let y=y1;y<=y2;y++)list.push([x,y]);
     const tiles=new Map(); let done=0, miss=0;
-    $('losStat').textContent=`تحميل التضاريس… 0 / ${list.length}`;
+    const need=list.filter(t=>!demMem.has('dem/'+z+'/'+t[0]+'/'+t[1])).length;
+    if(need) $('losStat').textContent=`تحميل التضاريس… 0 / ${list.length}`;
     const q=list.slice();
     await Promise.all(Array.from({length:6},async()=>{for(;;){const t=q.shift(); if(!t)return;
-      try{const e=await demTile(z,t[0],t[1]); if(e)tiles.set(t[0]+'/'+t[1],e); else miss++;}catch{miss++}
-      done++; $('losStat').textContent=`تحميل التضاريس… ${done} / ${list.length}`;}}));
+      try{const e=await demTile(z,t[0],t[1]); if(e)tiles.set(t[0]*1048576+t[1],e); else miss++;}catch{miss++}
+      done++; if(need) $('losStat').textContent=`تحميل التضاريس… ${done} / ${list.length}`;}}));
     if(!tiles.size) throw new Error(OFF?'offline':'net');
     const N2=256*2**z;
     const elev=(la,lo)=>{ const px=(lo+180)/360*N2-0.5, r=rad(la), py=(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*N2-0.5;
       const ix=Math.floor(px), iy=Math.floor(py), fx=px-ix, fy=py-iy;
-      const g=(X,Y)=>{const t=tiles.get((X>>8)+'/'+(Y>>8)); return t?t[(Y&255)*256+(X&255)]:NaN};
+      const g=(X,Y)=>{const t=tiles.get((X>>8)*1048576+(Y>>8)); return t?t[(Y&255)*256+(X&255)]:NaN};
       const a=g(ix,iy),b2=g(ix+1,iy),c=g(ix,iy+1),d=g(ix+1,iy+1);
       const v=a*(1-fx)*(1-fy)+b2*fx*(1-fy)+c*(1-fx)*fy+d*fx*fy; return isNaN(v)?(isNaN(a)?0:a):v; };
     const pxM=40075016*Math.cos(rad(lat))/N2, ds=Math.max(pxM*0.8, km*1000/1200), N=Math.ceil(km*1000/ds)+1;
@@ -416,6 +420,7 @@ async function losCompute(){
     losRun();
   }catch(e){ $('losStat').textContent= String(e.message)==='offline'?'وضع أوفلاين: التضاريس لهالمنطقة مو محفوظة. احسبها مرة وأنت متصل.':'ما قدرت أحمّل التضاريس. تأكد من الإنترنت.'; }
   losBusy=false; $('losGo').disabled=false;
+  if(losPending){ losPending=false; losCompute(); }
 }
 function losVisibility(){
   const {N,ds,G,g0,vis}=LOS, A=Math.max(0,parseFloat($('altN').value)||0)*0.3048, H0=g0+Math.max(0,parseFloat($('mast').value)||0);
@@ -445,11 +450,11 @@ function losRender(){
 }
 function losRun(){ if(!LOS||!mapOK) return; losVisibility(); losRender(); }
 function losOnUpdate(lat,lon,km){
-  if(!LOS) return;
-  if(LOS.key!==lat+','+lon+','+km){ LOS=null; if(losOverlay){map.removeLayer(losOverlay);losOverlay=null}
-    $('losStat').textContent='الموقع أو المدى تغيّر، اضغط "احسب التضاريس" من جديد.'; $('losInfo').textContent=''; return; }
+  if(!$('losOn').checked) return;
+  if(!LOS || LOS.key!==lat+','+lon+','+km){ clearTimeout(losAuto); losAuto=setTimeout(losCompute,220); return; }
   clearTimeout(losTimer); losTimer=setTimeout(losRender,60);
 }
+let losAuto=0;
 
 // ===== الخريطة =====
 let sat,labels_,map,sector,axis,rings,compass,ant,mapOK=false;
@@ -489,6 +494,8 @@ const MoveCtl=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.D
     $('mapNote').textContent=tapMove?'نقل الأنتينا شغال: المس الخريطة لتحديد الموقع.':'نقل الأنتينا مقفل.';setTimeout(()=>{if(!OFF)$('mapNote').textContent=''},2500)});return b}});
 new MoveCtl().addTo(map);
 map.on('click',e=>{if(tapMove)setPos(e.latlng)});
+let dragT=0;
+ant.on('drag',()=>{const now=Date.now(); if(now-dragT<120)return; dragT=now; setPos(ant.getLatLng());});
 ant.on('dragend',()=>setPos(ant.getLatLng()));
 mapOK=true;
 $('plotCard').style.display='none';
@@ -558,8 +565,9 @@ function setAlt(v){ v=Math.max(0,v); $('altN').value=v; if(v<=5000)$('alt').valu
 $('alt').oninput=()=>setAlt(+$('alt').value);
 $('altN').oninput=()=>{const v=parseFloat($('altN').value); if(v>=0){ if(v<=5000)$('alt').value=v; $('altV').textContent=v+' ft'; losRun(); }};
 document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>setAlt((parseFloat($('altN').value)||0)+(+b.dataset.a)));
-$('mast').oninput=losRun; $('losOn').onchange=losRender; $('losSector').onchange=losRender;
+$('mast').oninput=losRun; $('losOn').onchange=()=>{ if($('losOn').checked){ if(LOS) losRender(); else losCompute(); } else losRender(); }; $('losSector').onchange=losRender;
 $('losGo').onclick=losCompute;
+if(mapOK && $('losOn').checked) setTimeout(losCompute,300);
 $('altV').textContent=$('altN').value+' ft';
 if(!mapOK) $('losCard').style.display='none';
 
