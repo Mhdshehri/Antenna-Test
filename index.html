@@ -27,7 +27,7 @@
   .field label b{color:var(--acc);font-variant-numeric:tabular-nums}
   .hint{font-size:12px;color:var(--mut);margin-top:4px}
   input[type=range]{width:100%;accent-color:var(--acc)}
-  input[type=number]{width:100%;background:#0d1117;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:9px;font-size:15px;direction:ltr;text-align:left}
+  input[type=number]{width:100%;background:#0d1117;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:9px;font-size:16px;direction:ltr;text-align:left}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
   .presets button,.btn{background:#21262d;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:13px;cursor:pointer}
@@ -40,6 +40,25 @@
   textarea{width:100%;height:120px;background:#0d1117;color:var(--mut);border:1px solid var(--line);border-radius:8px;font:11px ui-monospace,monospace;direction:ltr;padding:8px}
   .msg{font-size:12px;color:var(--acc);min-height:16px;margin-top:6px}
   .tabs{display:flex;gap:6px;margin-bottom:8px}
+  input[type=range]{height:28px}
+  #rightCol{display:grid;gap:14px;align-content:start}
+  .lockBtn{display:block;width:34px;height:34px;line-height:34px;text-align:center;background:#fff;color:#000;font-size:18px;text-decoration:none}
+  .lockBtn.on{background:#3fb950}
+  @media(max-width:859px){
+    .wrap{padding:8px;gap:10px;display:flex;flex-direction:column}
+    .wrap>div,.wrap>#rightCol{display:contents}
+    .wrap>div>*{order:1}
+    .wrap>div>h1{order:-2}
+    .wrap>div>#mapCard,.wrap>div>#plotCard{order:0}
+    .wrap>div>.m2{order:2}
+    .wrap>div>#offCard{order:3;margin-top:0!important}
+    #map{height:58vh;min-height:320px}
+    h1{font-size:16px}.sub{display:none}
+    .card{padding:11px}
+    .presets button{padding:9px 12px}
+    .btn{padding:10px 12px}
+    input[type=range]::-webkit-slider-thumb{width:26px;height:26px}
+  }
 </style>
 </head>
 <body>
@@ -113,18 +132,18 @@
     </div>
   </div>
 
-  <div style="display:grid;gap:14px">
+  <div id="rightCol">
     <div class="card" style="padding:8px" id="mapCard">
       <div class="msg" id="mapNote" style="color:#d29922;padding:0 4px 6px"></div>
       <div id="map"></div>
-      <div class="hint" style="padding:6px 4px 0">اضغط على الخريطة أو اسحب النقطة الزرقاء لتغيير موقع الأنتينا. زر ⤢ يرجعك لعرض التغطية كاملة، وزر ⛶ ملء الشاشة (Esc للخروج).</div>
+      <div class="hint" style="padding:6px 4px 0">اسحب النقطة الزرقاء لتغيير موقع الأنتينا، أو فعّل زر 📍 والمس الخريطة. زر ⤢ يرجعك لعرض التغطية كاملة، وزر ⛶ ملء الشاشة (Esc للخروج).</div>
     </div>
 
     <div class="card" style="padding:8px" id="plotCard">
       <svg id="plot" viewBox="0 0 500 500" style="max-height:60vh"></svg>
       <div class="hint" id="plotNote" style="padding:0 4px"></div>
     </div>
-    <div class="card">
+    <div class="card m2">
       <table>
         <tr><td>الحافة اليمنى</td><td id="eR"></td></tr>
         <tr><td>المركز</td><td id="eC"></td></tr>
@@ -134,7 +153,7 @@
       </table>
     </div>
 
-    <div class="card">
+    <div class="card m2">
       <div class="tabs">
         <button class="btn on" id="tKml">KML (Google Earth)</button>
         <button class="btn" id="tGeo">GeoJSON</button>
@@ -343,7 +362,14 @@ ant=L.marker([0,0],{draggable:true,icon:L.divIcon({className:'',html:'<div style
 let tileErr=0,tileOK=false;
 sat.on('tileload',()=>{tileOK=true});
 sat.on('tileerror',()=>{if(tileOK||OFF)return;if(++tileErr===3){$('plotCard').style.display='';}if(tileErr===3)$('mapNote').textContent='صور الستالايت ما تتحمل هنا. افتح الملف في متصفح Chrome أو Edge مع إنترنت عشان تطلع الخريطة. الرسم اللي تحت شغال عادي.'});
-map.on('click',e=>setPos(e.latlng));
+const MOBILE=matchMedia('(max-width:859px), (pointer:coarse)').matches;
+let tapMove=!MOBILE;
+const MoveCtl=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar lockBtn'+(tapMove?' on':''));
+  b.href='#';b.title='نقل الأنتينا باللمس';b.innerHTML='📍';
+  L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);L.DomEvent.stopPropagation(e);tapMove=!tapMove;b.classList.toggle('on',tapMove);
+    $('mapNote').textContent=tapMove?'نقل الأنتينا شغال: المس الخريطة لتحديد الموقع.':'نقل الأنتينا مقفل.';setTimeout(()=>{if(!OFF)$('mapNote').textContent=''},2500)});return b}});
+new MoveCtl().addTo(map);
+map.on('click',e=>{if(tapMove)setPos(e.latlng)});
 ant.on('dragend',()=>setPos(ant.getLatLng()));
 mapOK=true;
 $('plotCard').style.display='none';
