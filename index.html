@@ -84,6 +84,33 @@
         <div class="hint">خط العرض / خط الطول (لملف Google Earth والإحداثيات)</div>
       </div>
     </div>
+
+    <div class="card" style="margin-top:14px" id="offCard">
+      <div class="field" style="margin-bottom:10px">
+        <label style="align-items:center">وضع أوفلاين
+          <input type="checkbox" id="offMode" style="width:20px;height:20px;accent-color:var(--acc)"></label>
+        <div class="hint">لما يكون شغال، الخريطة تاخذ الصور من التخزين بس، وما تطلب أي شي من الإنترنت.</div>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label>تحميل منطقة للأوفلاين (Prefetch)</label>
+        <div class="presets" style="margin:0 0 8px">
+          <button class="btn on" id="areaCov">منطقة التغطية</button>
+          <button class="btn" id="areaView">المنطقة الظاهرة</button>
+        </div>
+        <div class="row">
+          <div><div class="hint">من زوم</div><input type="number" id="zFrom" min="1" max="17" value="6"></div>
+          <div><div class="hint">إلى زوم (أقصى 17)</div><input type="number" id="zTo" min="1" max="17" value="13"></div>
+        </div>
+        <div class="hint" id="pfEst" style="margin-top:8px"></div>
+      </div>
+      <div style="height:8px;background:#0d1117;border-radius:6px;overflow:hidden;margin-bottom:8px"><div id="pfBar" style="height:100%;width:0;background:var(--acc);transition:width .2s"></div></div>
+      <div class="hint" id="pfStat" style="margin-bottom:8px"></div>
+      <div class="presets" style="margin:0">
+        <button class="btn primary" id="pfGo">⬇ تحميل</button>
+        <button class="btn" id="pfStop">إيقاف</button>
+        <button class="btn" id="pfClear">مسح المحفوظ</button>
+      </div>
+    </div>
   </div>
 
   <div style="display:grid;gap:14px">
@@ -224,18 +251,80 @@ function update(){
   $('out').value= fmt==='kml'?kml(pts,az,bw,km):geojson(pts,az,bw,km);
 }
 
+
+// ===== تخزين الصور (Prefetch / Offline) =====
+const SAT_URL='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const satUrl=(z,x,y)=>SAT_URL.replace('{z}',z).replace('{y}',y).replace('{x}',x);
+let OFF=false, dbP=null;
+function db(){ if(!dbP) dbP=new Promise((res,rej)=>{const r=indexedDB.open('antenna-tiles',1);
+  r.onupgradeneeded=()=>r.result.createObjectStore('t'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);}); return dbP; }
+async function tGet(k){ try{const d=await db(); return await new Promise(r=>{const q=d.transaction('t').objectStore('t').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(undefined)});}catch{return undefined} }
+async function tPut(k,v){ const d=await db(); return new Promise((r,j)=>{const t=d.transaction('t','readwrite');t.objectStore('t').put(v,k);t.oncomplete=r;t.onerror=()=>j(t.error)}); }
+async function tHas(k){ const d=await db(); return new Promise(r=>{const q=d.transaction('t').objectStore('t').getKey(k);q.onsuccess=()=>r(q.result!==undefined);q.onerror=()=>r(false)}); }
+async function tCount(){ try{const d=await db(); return await new Promise(r=>{const q=d.transaction('t').objectStore('t').count();q.onsuccess=()=>r(q.result);q.onerror=()=>r(0)});}catch{return 0} }
+async function tClear(){ const d=await db(); return new Promise(r=>{const t=d.transaction('t','readwrite');t.objectStore('t').clear();t.oncomplete=r}); }
+
+const CachedLayer = window.L ? L.TileLayer.extend({
+  createTile(c,done){
+    const img=document.createElement('img'); img.alt=''; img.setAttribute('role','presentation');
+    const key=c.z+'/'+c.x+'/'+c.y;
+    tGet(key).then(blob=>{
+      if(blob){ const u=URL.createObjectURL(blob); img.onload=()=>{URL.revokeObjectURL(u);done(null,img)}; img.onerror=e=>done(e,img); img.src=u; return; }
+      if(OFF){ done(new Error('offline'),img); return; }
+      img.onload=()=>done(null,img); img.onerror=e=>done(e,img); img.src=this.getTileUrl(c);
+    });
+    return img;
+  }
+}) : null;
+
+// حساب البلاطات
+const lon2x=(lon,z)=>Math.floor((lon+180)/360*2**z);
+const lat2y=(lat,z)=>{const r=rad(Math.max(-85.0511,Math.min(85.0511,lat)));return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*2**z)};
+function pfBounds(){
+  if(pfArea==='view' && mapOK){const b=map.getBounds();return {s:b.getSouth(),n:b.getNorth(),w:b.getWest(),e:b.getEast()};}
+  const la=parseFloat($('lat').value)||0, lo=parseFloat($('lon').value)||0, km=(parseFloat($('rgN').value)||1)*1.15;
+  const n=dest(la,lo,0,km)[0], s=dest(la,lo,180,km)[0], e=dest(la,lo,90,km)[1], w=dest(la,lo,270,km)[1];
+  return {s,n,w,e};
+}
+function* tilesIn(b,z1,z2){ for(let z=z1;z<=z2;z++){const x1=lon2x(b.w,z),x2=lon2x(b.e,z),y1=lat2y(b.n,z),y2=lat2y(b.s,z);
+  for(let x=x1;x<=x2;x++)for(let y=y1;y<=y2;y++)yield [z,x,y];} }
+function tileCount(b,z1,z2){let n=0;for(let z=z1;z<=z2;z++)n+=(lon2x(b.e,z)-lon2x(b.w,z)+1)*(lat2y(b.s,z)-lat2y(b.n,z)+1);return n}
+const MAX_TILES=60000;
+let pfArea='cov', pfRun=false;
+function zr(){let a=Math.max(1,Math.min(17,parseInt($('zFrom').value)||1)),b=Math.max(1,Math.min(17,parseInt($('zTo').value)||1));return a<=b?[a,b]:[b,a]}
+function pfEstimate(){
+  const [a,b]=zr(), n=tileCount(pfBounds(),a,b), mb=n*25/1024;
+  $('pfEst').textContent=`تقريبًا ${n.toLocaleString('en')} صورة (~${mb<1024?mb.toFixed(0)+' MB':(mb/1024).toFixed(1)+' GB'})`+(n>MAX_TILES?` — كثير! الحد ${MAX_TILES.toLocaleString('en')}، قلل الزوم أو المنطقة`:'');
+  $('pfEst').style.color=n>MAX_TILES?'#f85149':'';
+  return n;
+}
+async function pfStatus(){ $('pfStat').textContent=`المحفوظ حاليًا: ${(await tCount()).toLocaleString('en')} صورة`; }
+async function prefetch(){
+  if(pfRun) return; const [a,b]=zr(), bd=pfBounds(), total=tileCount(bd,a,b);
+  if(total>MAX_TILES){pfEstimate();return}
+  try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch{}
+  pfRun=true; let done=0, got=0, fail=0; const it=tilesIn(bd,a,b);
+  const tick=()=>{$('pfBar').style.width=(100*done/total)+'%';$('pfStat').textContent=`${done.toLocaleString('en')} / ${total.toLocaleString('en')} — جديد ${got}، فشل ${fail}`};
+  async function worker(){ for(;;){ if(!pfRun) return; const n=it.next(); if(n.done) return; const [z,x,y]=n.value, k=z+'/'+x+'/'+y;
+    try{ if(!(await tHas(k))){ const r=await fetch(satUrl(z,x,y)); if(!r.ok) throw r.status; await tPut(k,await r.blob()); got++; } }catch(e){ fail++; }
+    done++; if(done%10===0||done===total) tick(); } }
+  tick(); await Promise.all(Array.from({length:6},worker));
+  const stopped=!pfRun; pfRun=false; tick();
+  $('pfStat').textContent+= stopped?' — تم الإيقاف':(fail&&!got?' — ما قدر يحمّل (تأكد من الإنترنت)':' — خلص ✓');
+}
+
 // ===== الخريطة =====
-let map,sector,axis,rings,compass,ant,mapOK=false;
+let sat,labels_,map,sector,axis,rings,compass,ant,mapOK=false;
 let lastKey='', noFit=false;
 function initMap(){
 map=L.map('map',{zoomControl:true,maxZoom:21});
 if(getComputedStyle($('map')).position!=='relative') throw 'no-css';
-const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+sat=new CachedLayer(SAT_URL,
   {maxZoom:21,maxNativeZoom:17,attribution:'Imagery © Esri'}).addTo(map);
-const labels=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+labels_=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:21,maxNativeZoom:17}).addTo(map);
 const streets=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:21,maxNativeZoom:19,attribution:'© OpenStreetMap'});
-L.control.layers({'ستالايت':sat,'شوارع':streets},{'أسماء المدن':labels}).addTo(map);
+L.control.layers({'ستالايت':sat,'شوارع':streets},{'أسماء المدن':labels_}).addTo(map);
 L.control.scale({imperial:false}).addTo(map);
 const FitCtl=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar');
   b.href='#';b.title='عرض التغطية كاملة';b.innerHTML='⤢';b.style.cssText='display:block;width:34px;height:34px;line-height:34px;text-align:center;background:#fff;color:#000;font-size:20px;text-decoration:none';
@@ -253,7 +342,7 @@ compass=L.layerGroup().addTo(map);
 ant=L.marker([0,0],{draggable:true,icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#58a6ff;border:3px solid #fff;box-shadow:0 0 6px #000"></div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(map);
 let tileErr=0,tileOK=false;
 sat.on('tileload',()=>{tileOK=true});
-sat.on('tileerror',()=>{if(tileOK)return;if(++tileErr===3){$('plotCard').style.display='';}if(tileErr===3)$('mapNote').textContent='صور الستالايت ما تتحمل هنا. افتح الملف في متصفح Chrome أو Edge مع إنترنت عشان تطلع الخريطة. الرسم اللي تحت شغال عادي.'});
+sat.on('tileerror',()=>{if(tileOK||OFF)return;if(++tileErr===3){$('plotCard').style.display='';}if(tileErr===3)$('mapNote').textContent='صور الستالايت ما تتحمل هنا. افتح الملف في متصفح Chrome أو Edge مع إنترنت عشان تطلع الخريطة. الرسم اللي تحت شغال عادي.'});
 map.on('click',e=>setPos(e.latlng));
 ant.on('dragend',()=>setPos(ant.getLatLng()));
 mapOK=true;
@@ -318,6 +407,18 @@ $('copy').onclick=async()=>{
   setTimeout(()=>$('msg').textContent='',2500);
 };
 update();
+
+// offline UI
+$('offMode').onchange=()=>{OFF=$('offMode').checked; if(mapOK){ if(OFF){map.removeLayer(labels_)}else{labels_.addTo(map)} sat.redraw(); } $('mapNote').textContent=OFF?'وضع أوفلاين: الصور من التخزين بس، والأماكن اللي ما حمّلتها بتطلع فاضية.':''; };
+$('areaCov').onclick=()=>{pfArea='cov';$('areaCov').classList.add('on');$('areaView').classList.remove('on');pfEstimate()};
+$('areaView').onclick=()=>{pfArea='view';$('areaView').classList.add('on');$('areaCov').classList.remove('on');pfEstimate()};
+['zFrom','zTo','rgN','lat','lon'].forEach(id=>$(id).addEventListener('input',pfEstimate));
+$('pfGo').onclick=prefetch; $('pfStop').onclick=()=>{pfRun=false};
+$('pfClear').onclick=async()=>{ if($('pfClear').dataset.c!=='1'){$('pfClear').dataset.c='1';$('pfClear').textContent='متأكد؟ اضغط مرة ثانية';setTimeout(()=>{$('pfClear').dataset.c='';$('pfClear').textContent='مسح المحفوظ'},3000);return}
+  $('pfClear').dataset.c='';$('pfClear').textContent='مسح المحفوظ'; await tClear(); pfStatus(); if(mapOK)sat.redraw(); };
+if(mapOK){ map.on('moveend',()=>{if(pfArea==='view')pfEstimate()}); }
+if(!window.indexedDB){ $('offCard').style.display='none'; }
+pfEstimate(); pfStatus();
 </script>
 </body>
 </html>
