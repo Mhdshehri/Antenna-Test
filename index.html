@@ -325,7 +325,7 @@ let OFF=false, dbP=null;
 function db(){ if(!dbP) dbP=new Promise((res,rej)=>{const r=indexedDB.open('antenna-tiles',1);
   r.onupgradeneeded=()=>r.result.createObjectStore('t'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);}); return dbP; }
 async function tGet(k){ try{const d=await db(); return await new Promise(r=>{const q=d.transaction('t').objectStore('t').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(undefined)});}catch{return undefined} }
-async function tPut(k,v){ const d=await db(); return new Promise((r,j)=>{const t=d.transaction('t','readwrite');t.objectStore('t').put(v,k);t.oncomplete=r;t.onerror=()=>j(t.error)}); }
+async function tPut(k,v){ const d=await db(); return new Promise((r,j)=>{const t=d.transaction('t','readwrite');t.objectStore('t').put(v,k);t.oncomplete=r;t.onerror=()=>j(t.error);t.onabort=()=>j(t.error)}); }
 async function tHas(k){ const d=await db(); return new Promise(r=>{const q=d.transaction('t').objectStore('t').getKey(k);q.onsuccess=()=>r(q.result!==undefined);q.onerror=()=>r(false)}); }
 async function tCount(){ try{const d=await db(); return await new Promise(r=>{const q=d.transaction('t').objectStore('t').count();q.onsuccess=()=>r(q.result);q.onerror=()=>r(0)});}catch{return 0} }
 async function tClear(){ const d=await db(); return new Promise(r=>{const t=d.transaction('t','readwrite');t.objectStore('t').clear();t.oncomplete=r}); }
@@ -384,10 +384,11 @@ const DEM_URL=(z,x,y)=>`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/
 const K_REF=4/3, RE=6371008.8, MAX_DEM_TILES=300;
 let LOS=null, losOverlay=null, losBusy=false, losTimer=0;
 const demMem=new Map();
+const withTO=(p,ms)=>Promise.race([p,new Promise((_,j)=>setTimeout(()=>j(new Error('timeout')),ms))]);
 async function demTile(z,x,y){
-  const k='dem/'+z+'/'+x+'/'+y; if(demMem.has(k)) return demMem.get(k); let blob=await tGet(k);
-  if(!blob){ if(OFF) return null; const r=await fetch(DEM_URL(z,x,y)); if(!r.ok) throw new Error('dem '+r.status); blob=await r.blob(); try{await tPut(k,blob)}catch{} }
-  const bmp=await createImageBitmap(blob); const c=document.createElement('canvas'); c.width=c.height=256;
+  const k='dem/'+z+'/'+x+'/'+y; if(demMem.has(k)) return demMem.get(k); let blob=await withTO(tGet(k),5000).catch(()=>undefined);
+  if(!blob){ if(OFF) return null; const ac=new AbortController(), tm=setTimeout(()=>ac.abort(),20000); let r; try{ r=await fetch(DEM_URL(z,x,y),{signal:ac.signal}); if(!r.ok) throw new Error('dem '+r.status); blob=await r.blob(); } finally{ clearTimeout(tm); } withTO(tPut(k,blob),5000).catch(()=>{}); }
+  const bmp=await withTO(createImageBitmap(blob),10000); const c=document.createElement('canvas'); c.width=c.height=256;
   const cx=c.getContext('2d'); cx.drawImage(bmp,0,0); const d=cx.getImageData(0,0,256,256).data; const e=new Float32Array(65536);
   for(let i=0;i<65536;i++){ const v=d[i*4]*256+d[i*4+1]+d[i*4+2]/256-32768; e[i]=v<0?0:v; } // البحر = مستوى سطح الماء (البيانات فيها عمق البحر)
   if(demMem.size>MAX_DEM_TILES+50) demMem.clear(); demMem.set(k,e);
@@ -400,10 +401,10 @@ function demZoom(km,lat){
   let z=Math.max(zs,z90); while(z>6 && tiles(z)>MAX_DEM_TILES) z--;
   return z;
 }
-let losPending=false;
+let losGen=0;
 async function losCompute(){
-  if(losBusy){ losPending=true; return; } const lat=parseFloat($('lat').value)||0, lon=parseFloat($('lon').value)||0, km=parseFloat($('rgN').value)||1;
-  losBusy=true; $('losGo').disabled=true;
+  const gen=++losGen, stale=()=>gen!==losGen, lat=parseFloat($('lat').value)||0, lon=parseFloat($('lon').value)||0, km=parseFloat($('rgN').value)||1;
+  losBusy=true; $('losStat').textContent='يحسب…';
   try{
     const z=demZoom(km,lat), b={n:dest(lat,lon,0,km)[0],s:dest(lat,lon,180,km)[0],e:dest(lat,lon,90,km)[1],w:dest(lat,lon,270,km)[1]};
     const x1=lon2x(b.w,z),x2=lon2x(b.e,z),y1=lat2y(b.n,z),y2=lat2y(b.s,z), list=[];
@@ -415,6 +416,7 @@ async function losCompute(){
     await Promise.all(Array.from({length:6},async()=>{for(;;){const t=q.shift(); if(!t)return;
       try{const e=await demTile(z,t[0],t[1]); if(e)tiles.set(t[0]*1048576+t[1],e); else miss++;}catch{miss++}
       done++; if(need) $('losStat').textContent=`تحميل التضاريس… ${done} / ${list.length}`;}}));
+    if(stale()) return;
     if(!tiles.size) throw new Error(OFF?'offline':'net');
     const N2=256*2**z, TW=x2-x1+1, TH=y2-y1+1, grid=new Array(TW*TH).fill(null);
     for(let x=x1;x<=x2;x++)for(let y=y1;y<=y2;y++){ const t=tiles.get(x*1048576+y); if(t) grid[(y-y1)*TW+(x-x1)]=t; }
@@ -430,15 +432,16 @@ async function losCompute(){
     const p1=rad(lat), l1=rad(lon), sp1=Math.sin(p1), cp1=Math.cos(p1);
     const sD=new Float64Array(N), cD=new Float64Array(N), curv=new Float32Array(N);
     for(let i=1;i<N;i++){ const d=i*ds, a=d/RE; sD[i]=Math.sin(a); cD[i]=Math.cos(a); curv[i]=d*d/(2*K_REF*RE); }
-    for(let r=0;r<NR;r++){ const b=r*2*Math.PI/NR, sb=Math.sin(b), cb=Math.cos(b), o=r*N;
+    let tY=performance.now();
+    for(let r=0;r<NR;r++){ if(performance.now()-tY>40){ await new Promise(res=>setTimeout(res,0)); if(stale()) return; tY=performance.now(); $('losStat').textContent=`يحسب… ${Math.round(100*r/NR)}%`; }
+      const b=r*2*Math.PI/NR, sb=Math.sin(b), cb=Math.cos(b), o=r*N;
       for(let i=1;i<N;i++){ const sp2=sp1*cD[i]+cp1*sD[i]*cb, p2=Math.asin(sp2), l2=l1+Math.atan2(sb*sD[i]*cp1, cD[i]-sp1*sp2);
         G[o+i]=elev(p2*180/Math.PI, l2*180/Math.PI) - curv[i]; } }
     LOS={lat,lon,km,z,N,ds,G,g0,nr:NR,vis:new Uint8Array(NR*N),key:lat+','+lon+','+km};
     $('losStat').textContent=`التضاريس جاهزة (دقة تقريبًا ${Math.round(pxM)} م)`+(miss?` — ناقص ${miss} قطعة`:'')+` · ارتفاع الأرض عند الأنتينا ${Math.round(g0)} م`;
     losRun();
-  }catch(e){ $('losStat').textContent= String(e.message)==='offline'?'وضع أوفلاين: التضاريس لهالمنطقة مو محفوظة. احسبها مرة وأنت متصل.':'ما قدرت أحمّل التضاريس. تأكد من الإنترنت.'; }
-  losBusy=false; $('losGo').disabled=false;
-  if(losPending){ losPending=false; losCompute(); }
+  }catch(e){ if(stale()) return; $('losStat').textContent= String(e.message)==='offline'?'وضع أوفلاين: التضاريس لهالمنطقة مو محفوظة. احسبها مرة وأنت متصل.':'ما قدرت أحمّل التضاريس. تأكد من الإنترنت.'; }
+  finally{ if(!stale()) losBusy=false; }
 }
 function losVisibility(){
   const isl=$('losIsl').checked, {N,ds,G,g0,vis,nr:NRAY}=LOS, A=Math.max(0,parseFloat($('altN').value)||0)*0.3048, H0=g0+Math.max(0,parseFloat($('mast').value)||0);
