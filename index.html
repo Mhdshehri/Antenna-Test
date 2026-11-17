@@ -551,7 +551,7 @@ let tileErr=0,tileOK=false;
 sat.on('tileload',()=>{tileOK=true});
 sat.on('tileerror',()=>{if(tileOK||OFF)return;if(++tileErr===3){$('plotCard').style.display='';}if(tileErr===3)$('mapNote').textContent='صور الستالايت ما تتحمل هنا. افتح الملف في متصفح Chrome أو Edge مع إنترنت عشان تطلع الخريطة. الرسم اللي تحت شغال عادي.'});
 const MOBILE=matchMedia('(max-width:859px), (pointer:coarse)').matches;
-let tapMove=!MOBILE;
+let tapMove=false;
 const MoveCtl=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar lockBtn'+(tapMove?' on':''));
   b.href='#';b.title='نقل الأنتينا باللمس';b.innerHTML='📍';
   L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);L.DomEvent.stopPropagation(e);tapMove=!tapMove;b.classList.toggle('on',tapMove);
