@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>رسم تغطية الأنتينا</title>
+<title>Antenna Coverage Planner</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="theme-color" content="#0f1419">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="تغطية الأنتينا">
+<meta name="apple-mobile-web-app-title" content="Antenna Coverage">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -73,25 +73,25 @@
 <body>
 <div class="wrap">
   <div>
-    <h1>رسم تغطية الأنتينا</h1>
-    <p class="sub">حدد الاتجاه وعرض الحزمة والمدى، والقطاع يتحدث على خريطة الأقمار الصناعية مباشرة.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h1 style="margin:4px 0 2px"><span data-i18n="title">رسم تغطية الأنتينا</span></h1><button class="btn" id="langBtn" style="font-size:13px">عربي</button></div>
+    <p class="sub"><span data-i18n="sub">حدد الاتجاه وعرض الحزمة والمدى، والقطاع يتحدث على خريطة الأقمار الصناعية مباشرة.</span></p>
 
     <div class="card">
       <div class="field">
-        <label>عرض الحزمة <b id="bwV"></b></label>
+        <label><span data-i18n="bw">عرض الحزمة</span> <b id="bwV"></b></label>
         <input type="range" id="bw" min="1" max="360" value="30">
         <div class="presets" id="bwP"></div>
         <div class="hint" id="bwHint"></div>
       </div>
 
       <div class="field">
-        <label>الاتجاه (Azimuth) <b id="azV"></b></label>
+        <label><span data-i18n="az">الاتجاه (Azimuth)</span> <b id="azV"></b></label>
         <input type="range" id="az" min="0" max="359" value="90">
-        <div class="hint">0 = شمال، 90 = شرق، 180 = جنوب، 270 = غرب</div>
+        <div class="hint"><span data-i18n="azHint">0 = شمال، 90 = شرق، 180 = جنوب، 270 = غرب</span></div>
       </div>
 
       <div class="field">
-        <label>المدى <b id="rgV"></b></label>
+        <label><span data-i18n="rg">المدى</span> <b id="rgV"></b></label>
         <input type="range" id="rg" min="1" max="500" value="100">
         <div class="row" style="margin-top:6px">
           <input type="number" id="rgN" min="0.1" step="any" value="100">
@@ -100,27 +100,27 @@
             <button class="btn" data-d="10">+10</button>
           </div>
         </div>
-        <div class="hint">بالكيلومتر. تقدر تكتب أي رقم في الخانة حتى لو أكبر من 500.</div>
+        <div class="hint"><span data-i18n="rgHint">بالكيلومتر. تقدر تكتب أي رقم في الخانة حتى لو أكبر من 500.</span></div>
       </div>
 
       <div class="field" style="margin-bottom:0">
-        <label>موقع الأنتينا</label>
+        <label><span data-i18n="pos">موقع الأنتينا</span></label>
         <div class="row">
           <input type="number" id="lat" step="any" value="24.7136" placeholder="Lat">
           <input type="number" id="lon" step="any" value="46.6753" placeholder="Lon">
         </div>
-        <div class="hint">خط العرض / خط الطول (لملف Google Earth والإحداثيات)</div>
+        <div class="hint"><span data-i18n="posHint">خط العرض / خط الطول (لملف Google Earth والإحداثيات)</span></div>
       </div>
     </div>
 
     <div class="card" style="margin-top:14px" id="losCard">
       <div class="field" style="margin-bottom:10px">
-        <label style="align-items:center">مدى الرؤية بالارتفاع (Up in the air)
+        <label style="align-items:center"><span data-i18n="losTitle">مدى الرؤية بالارتفاع (Up in the air)</span>
           <input type="checkbox" id="losOn" checked style="width:20px;height:20px;accent-color:var(--acc)"></label>
-        <div class="hint">يلوّن الأماكن اللي الأنتينا تشوف فيها الدرون بخط نظر مباشر، ويتحدث لحاله وأنت تحرك الأنتينا أو الارتفاع أو المدى.</div>
+        <div class="hint"><span data-i18n="losHint">يلوّن الأماكن اللي الأنتينا تشوف فيها الدرون بخط نظر مباشر، ويتحدث لحاله وأنت تحرك الأنتينا أو الارتفاع أو المدى.</span></div>
       </div>
       <div class="field">
-        <label>ارتفاع الدرون فوق الأرض <b id="altV"></b></label>
+        <label><span data-i18n="alt">ارتفاع الدرون فوق الأرض</span> <b id="altV"></b></label>
         <input type="range" id="alt" min="0" max="6000" step="10" value="400">
         <div class="row" style="margin-top:6px">
           <input type="number" id="altN" min="0" step="any" value="400">
@@ -130,63 +130,63 @@
           </div>
         </div>
         <div class="presets" style="margin-top:8px" id="altRef">
-          <button class="btn on" data-ref="agl">فوق الأرض (AGL)</button>
-          <button class="btn" data-ref="rel">فوق الأنتينا (Relative)</button>
-          <button class="btn" data-ref="msl">فوق سطح البحر (MSL)</button>
+          <button class="btn on" data-ref="agl"><span data-i18n="refAgl">فوق الأرض (AGL)</span></button>
+          <button class="btn" data-ref="rel"><span data-i18n="refRel">فوق الأنتينا (Relative)</span></button>
+          <button class="btn" data-ref="msl"><span data-i18n="refMsl">فوق سطح البحر (MSL)</span></button>
         </div>
         <div class="hint" id="altRefHint">بالقدم (ft) فوق سطح الأرض اللي تحت الدرون، يعني الدرون يلحق شكل الأرض (Terrain following).</div>
       </div>
       <div class="field">
-        <label>ارتفاع الأنتينا عن الأرض (متر)</label>
+        <label><span data-i18n="mast">ارتفاع الأنتينا عن الأرض (متر)</span></label>
         <input type="number" id="mast" min="0" step="any" value="2">
       </div>
       <div class="field" style="margin-bottom:10px">
-        <label>الانكسار</label>
+        <label><span data-i18n="refr">الانكسار</span></label>
         <div class="presets" style="margin:0" id="refrK">
-          <button class="btn on" data-k="1.3333333">راديو (k = 4/3)</button>
-          <button class="btn" data-k="1.16">ضوئي زي HeyWhatsThat (k ≈ 1.16)</button>
+          <button class="btn on" data-k="1.3333333"><span data-i18n="refrRadio">راديو (k = 4/3)</span></button>
+          <button class="btn" data-k="1.16"><span data-i18n="refrOpt">ضوئي زي HeyWhatsThat (k ≈ 1.16)</span></button>
         </div>
-        <div class="hint">راديو هو الأقرب لوصلة الدرون. الضوئي للمقارنة مع HeyWhatsThat بس.</div>
+        <div class="hint"><span data-i18n="refrHint">راديو هو الأقرب لوصلة الدرون. الضوئي للمقارنة مع HeyWhatsThat بس.</span></div>
       </div>
       <div class="field" style="margin-bottom:10px">
-        <label style="align-items:center">إظهار المناطق اللي ورا الحجب
+        <label style="align-items:center"><span data-i18n="isl">إظهار المناطق اللي ورا الحجب</span>
           <input type="checkbox" id="losIsl" style="width:20px;height:20px;accent-color:var(--acc)"></label>
-        <div class="hint">مطفي: أول ما ينقطع خط النظر في اتجاه، ما يظهر شي وراه (زي HeyWhatsThat).</div>
+        <div class="hint"><span data-i18n="islHint">مطفي: أول ما ينقطع خط النظر في اتجاه، ما يظهر شي وراه (زي HeyWhatsThat).</span></div>
       </div>
       <div class="field" style="margin-bottom:10px">
-        <label style="align-items:center">داخل قطاع الأنتينا بس
+        <label style="align-items:center"><span data-i18n="sec">داخل قطاع الأنتينا بس</span>
           <input type="checkbox" id="losSector" style="width:20px;height:20px;accent-color:var(--acc)"></label>
       </div>
-      <button class="btn" id="losGo" style="width:100%">↻ إعادة الحساب</button>
+      <button class="btn" id="losGo" style="width:100%"><span data-i18n="recalc">↻ إعادة الحساب</span></button>
       <div class="hint" id="losStat" style="margin-top:8px"></div>
       <div class="hint" id="losInfo" style="margin-top:4px;color:var(--txt)"></div>
-      <div class="hint" style="margin-top:8px"><span style="color:#58a6ff">■</span> الأماكن اللي الأنتينا تشوف فيها الدرون</div>
+      <div class="hint" style="margin-top:8px"><span style="color:#58a6ff">■</span> <span data-i18n="legend">الأماكن اللي الأنتينا تشوف فيها الدرون</span></div>
     </div>
 
     <div class="card" style="margin-top:14px" id="offCard">
       <div class="field" style="margin-bottom:10px">
-        <label style="align-items:center">وضع أوفلاين
+        <label style="align-items:center"><span data-i18n="off">وضع أوفلاين</span>
           <input type="checkbox" id="offMode" style="width:20px;height:20px;accent-color:var(--acc)"></label>
-        <div class="hint">لما يكون شغال، الخريطة تاخذ الصور من التخزين بس، وما تطلب أي شي من الإنترنت.</div>
+        <div class="hint"><span data-i18n="offHint">لما يكون شغال، الخريطة تاخذ الصور من التخزين بس، وما تطلب أي شي من الإنترنت.</span></div>
       </div>
       <div class="field" style="margin-bottom:10px">
-        <label>تحميل منطقة للأوفلاين (Prefetch)</label>
+        <label><span data-i18n="pf">تحميل منطقة للأوفلاين (Prefetch)</span></label>
         <div class="presets" style="margin:0 0 8px">
-          <button class="btn on" id="areaCov">منطقة التغطية</button>
-          <button class="btn" id="areaView">المنطقة الظاهرة</button>
+          <button class="btn on" id="areaCov"><span data-i18n="pfCov">منطقة التغطية</span></button>
+          <button class="btn" id="areaView"><span data-i18n="pfView">المنطقة الظاهرة</span></button>
         </div>
         <div class="row">
-          <div><div class="hint">من زوم</div><input type="number" id="zFrom" min="1" max="17" value="6"></div>
-          <div><div class="hint">إلى زوم (أقصى 17)</div><input type="number" id="zTo" min="1" max="17" value="13"></div>
+          <div><div class="hint"><span data-i18n="zFrom">من زوم</span></div><input type="number" id="zFrom" min="1" max="17" value="6"></div>
+          <div><div class="hint"><span data-i18n="zTo">إلى زوم (أقصى 17)</span></div><input type="number" id="zTo" min="1" max="17" value="13"></div>
         </div>
         <div class="hint" id="pfEst" style="margin-top:8px"></div>
       </div>
       <div style="height:8px;background:#0d1117;border-radius:6px;overflow:hidden;margin-bottom:8px"><div id="pfBar" style="height:100%;width:0;background:var(--acc);transition:width .2s"></div></div>
       <div class="hint" id="pfStat" style="margin-bottom:8px"></div>
       <div class="presets" style="margin:0">
-        <button class="btn primary" id="pfGo">⬇ تحميل</button>
-        <button class="btn" id="pfStop">إيقاف</button>
-        <button class="btn" id="pfClear">مسح المحفوظ</button>
+        <button class="btn primary" id="pfGo"><span data-i18n="pfGo">⬇ تحميل</span></button>
+        <button class="btn" id="pfStop"><span data-i18n="pfStop">إيقاف</span></button>
+        <button class="btn" id="pfClear"><span data-i18n="pfClear">مسح المحفوظ</span></button>
       </div>
     </div>
   </div>
@@ -195,7 +195,7 @@
     <div class="card" style="padding:8px" id="mapCard">
       <div class="msg" id="mapNote" style="color:#d29922;padding:0 4px 6px"></div>
       <div id="map"></div>
-      <div class="hint" style="padding:6px 4px 0">اسحب النقطة الزرقاء لتغيير موقع الأنتينا، أو فعّل زر 📍 والمس الخريطة. زر ⤢ يرجعك لعرض التغطية كاملة، وزر ⛶ ملء الشاشة (Esc للخروج).</div>
+      <div class="hint" style="padding:6px 4px 0"><span data-i18n="mapHint">اسحب النقطة الزرقاء لتغيير موقع الأنتينا، أو فعّل زر 📍 والمس الخريطة. زر ⤢ يرجعك لعرض التغطية كاملة، وزر ⛶ ملء الشاشة (Esc للخروج).</span></div>
     </div>
 
     <div class="card" style="padding:8px" id="plotCard">
@@ -204,11 +204,11 @@
     </div>
     <div class="card m2">
       <table>
-        <tr><td>الحافة اليمنى</td><td id="eR"></td></tr>
-        <tr><td>المركز</td><td id="eC"></td></tr>
-        <tr><td>الحافة اليسرى</td><td id="eL"></td></tr>
-        <tr><td>عرض القطاع عند نهاية المدى</td><td id="arc"></td></tr>
-        <tr><td>مساحة التغطية</td><td id="area"></td></tr>
+        <tr><td><span data-i18n="eR">الحافة اليمنى</span></td><td id="eR"></td></tr>
+        <tr><td><span data-i18n="eC">المركز</span></td><td id="eC"></td></tr>
+        <tr><td><span data-i18n="eL">الحافة اليسرى</span></td><td id="eL"></td></tr>
+        <tr><td><span data-i18n="arcL">عرض القطاع عند نهاية المدى</span></td><td id="arc"></td></tr>
+        <tr><td><span data-i18n="areaL">مساحة التغطية</span></td><td id="area"></td></tr>
       </table>
     </div>
 
@@ -216,20 +216,43 @@
       <div class="tabs">
         <button class="btn on" id="tKml">KML (Google Earth)</button>
         <button class="btn" id="tGeo">GeoJSON</button>
-        <button class="btn" id="copy" style="margin-inline-start:auto">نسخ</button>
+        <button class="btn" id="copy" style="margin-inline-start:auto"><span data-i18n="copy">نسخ</span></button>
       </div>
       <div class="presets" style="margin:0 0 8px">
-        <button class="btn primary" id="dlKml">⬇ تحميل KML</button>
-        <button class="btn primary" id="dlPoly">⬇ تحميل .poly (Mission Planner)</button>
+        <button class="btn primary" id="dlKml"><span data-i18n="dlKml">⬇ تحميل KML</span></button>
+        <button class="btn primary" id="dlPoly"><span data-i18n="dlPoly">⬇ تحميل .poly (Mission Planner)</span></button>
       </div>
       <textarea id="out" readonly></textarea>
       <div class="msg" id="msg"></div>
-      <div class="hint">Mission Planner: في شاشة Flight Plan، كليك يمين على الخريطة ← Map Tool ← KML Overlay واختر ملف KML. ملف .poly تحمّله من قائمة Draw Polygon ← Load Polygon.</div>
+      <div class="hint"><span data-i18n="mpHint">Mission Planner: في شاشة Flight Plan، كليك يمين على الخريطة ← Map Tool ← KML Overlay واختر ملف KML. ملف .poly تحمّله من قائمة Draw Polygon ← Load Polygon.</span></div>
     </div>
   </div>
 </div>
 
 <script>
+// ===== اللغة / Language =====
+const I18N={en:Object.assign({"mpHint": "Mission Planner: in Flight Plan, right-click the map → Map Tool → KML Overlay and pick the KML file. Load the .poly via Draw Polygon → Load Polygon.", "mapHint": "Drag the blue dot to move the antenna, or turn on 📍 and tap the map. ⤢ shows the whole coverage, ⛶ is fullscreen (Esc to exit).", "losHint": "Shades where the antenna has direct line of sight to the drone. Updates live as you move the antenna, altitude or range.", "sub": "Set azimuth, beamwidth and range. The sector updates live on the satellite map.", "offHint": "When on, the map uses stored imagery only and makes no internet requests.", "islHint": "Off: once line of sight is blocked in a direction, nothing behind it is shown.", "refrHint": "Radio is closest to a real drone link. Optical is only for comparing with HeyWhatsThat.", "rgHint": "In kilometers. You can type any value in the box, even above 500.", "posHint": "Latitude / Longitude (used for the Google Earth file and coordinates)", "azHint": "0 = North, 90 = East, 180 = South, 270 = West", "legend": "Where the antenna can see the drone", "losTitle": "Up in the air (line of sight)", "pf": "Download area for offline use (Prefetch)", "refrOpt": "Optical, like HeyWhatsThat (k ≈ 1.16)", "dlPoly": "⬇ Download .poly (Mission Planner)", "mast": "Antenna height above ground (m)", "isl": "Show areas behind obstructions", "arcL": "Sector width at max range", "alt": "Drone altitude", "refRel": "Above antenna (Relative)", "sec": "Antenna sector only", "refMsl": "Above sea level (MSL)", "title": "Antenna Coverage Planner", "az": "Azimuth", "zTo": "To zoom (max 17)", "refAgl": "Above ground (AGL)", "refrRadio": "Radio (k = 4/3)", "pfView": "Visible area", "recalc": "↻ Recalculate", "pos": "Antenna position", "pfCov": "Coverage area", "eR": "Right edge", "eL": "Left edge", "areaL": "Coverage area", "off": "Offline mode", "pfClear": "Clear stored", "dlKml": "⬇ Download KML", "bw": "Beamwidth", "refr": "Refraction", "pfGo": "⬇ Download", "zFrom": "From zoom", "eC": "Center", "rg": "Range", "pfStop": "Stop", "copy": "Copy", "appTitle": "Antenna Coverage", "km": "km", "m": "m", "full360": "Full 360° coverage", "chord": "chord", "arcW": "arc", "refHint_agl": "In feet (ft) above the ground under the drone, i.e. the drone follows the terrain (Terrain following).", "refHint_rel": "In feet (ft) above the ground at the antenna site, constant for the whole flight, like Relative in Mission Planner. Where the terrain is higher than the drone, it counts as blocked.", "refHint_msl": "In feet (ft) above mean sea level, constant for the whole flight, like Up in the Air in HeyWhatsThat.", "pfStopped": " — stopped", "pfFail": " — download failed (check your internet)", "pfDone": " — done ✓", "near": "near", "far": "far", "computing": "Computing…", "losOffline": "Offline mode: terrain for this area is not stored. Compute it once while online.", "losNet": "Couldn't load terrain. Check your internet connection.", "sector": "the sector", "circle": "the circle", "visEnd": "visible to the end of the range", "layerSat": "Satellite", "layerStreets": "Streets", "layerLabels": "Place names", "fitTitle": "Show whole coverage", "fullTitle": "Fullscreen", "moveTitle": "Move antenna by tapping", "tileErr": "Satellite imagery won't load here. Open the file in Chrome or Edge with internet to see the map. The diagram below still works.", "moveOn": "Antenna move is on: tap the map to set the position.", "moveOff": "Antenna move is locked.", "noMap": "The satellite map works when you open sector_map.html in a browser with internet. Only the diagram is shown here.", "copied": "Copied ✓", "copyManual": "Select the text and copy it manually", "offNote": "Offline mode: imagery from storage only. Areas you haven't downloaded will be blank.", "pfClearConfirm": "Sure? Tap again", "langBtn": "عربي"},{lr:h=>`${h}° right + ${h}° left`,
+  pfEst:(n,size,over,max)=>`About ${n} tiles (~${size})`+(over?` — too many! Limit is ${max}, lower the zoom or the area`:''),
+  pfSaved:n=>`Stored now: ${n} tiles`,
+  pfTick:(d,t,g,f)=>`${d} / ${t} — new ${g}, failed ${f}`,
+  demLoad:(l,d,t)=>`Loading terrain (${l})… ${d} / ${t}`,
+  pct:p=>`Computing… ${p}%`,
+  losReady:(nr,rn,fr,miss,g0)=>`Terrain ready (${nr} m resolution up to ${rn} km`+(fr?`, ${fr} m beyond)`:')')+(miss?` — ${miss} tiles missing`:'')+` · ground at antenna ${g0} m`,
+  losInfo:(p,where,first)=>`${p}% of ${where} visible · along the azimuth: ${first===null?'visible to the end of the range':'first obstruction at '+first+' km'}`,
+  downloaded:n=>'Downloaded: '+n,}),
+ar:Object.assign({"mpHint": "Mission Planner: في شاشة Flight Plan، كليك يمين على الخريطة ← Map Tool ← KML Overlay واختر ملف KML. ملف .poly تحمّله من قائمة Draw Polygon ← Load Polygon.", "mapHint": "اسحب النقطة الزرقاء لتغيير موقع الأنتينا، أو فعّل زر 📍 والمس الخريطة. زر ⤢ يرجعك لعرض التغطية كاملة، وزر ⛶ ملء الشاشة (Esc للخروج).", "losHint": "يلوّن الأماكن اللي الأنتينا تشوف فيها الدرون بخط نظر مباشر، ويتحدث لحاله وأنت تحرك الأنتينا أو الارتفاع أو المدى.", "sub": "حدد الاتجاه وعرض الحزمة والمدى، والقطاع يتحدث على خريطة الأقمار الصناعية مباشرة.", "offHint": "لما يكون شغال، الخريطة تاخذ الصور من التخزين بس، وما تطلب أي شي من الإنترنت.", "islHint": "مطفي: أول ما ينقطع خط النظر في اتجاه، ما يظهر شي وراه (زي HeyWhatsThat).", "refrHint": "راديو هو الأقرب لوصلة الدرون. الضوئي للمقارنة مع HeyWhatsThat بس.", "rgHint": "بالكيلومتر. تقدر تكتب أي رقم في الخانة حتى لو أكبر من 500.", "posHint": "خط العرض / خط الطول (لملف Google Earth والإحداثيات)", "azHint": "0 = شمال، 90 = شرق، 180 = جنوب، 270 = غرب", "legend": "الأماكن اللي الأنتينا تشوف فيها الدرون", "losTitle": "مدى الرؤية بالارتفاع (Up in the air)", "pf": "تحميل منطقة للأوفلاين (Prefetch)", "refrOpt": "ضوئي زي HeyWhatsThat (k ≈ 1.16)", "dlPoly": "⬇ تحميل .poly (Mission Planner)", "mast": "ارتفاع الأنتينا عن الأرض (متر)", "isl": "إظهار المناطق اللي ورا الحجب", "arcL": "عرض القطاع عند نهاية المدى", "alt": "ارتفاع الدرون فوق الأرض", "refRel": "فوق الأنتينا (Relative)", "sec": "داخل قطاع الأنتينا بس", "refMsl": "فوق سطح البحر (MSL)", "title": "رسم تغطية الأنتينا", "az": "الاتجاه (Azimuth)", "zTo": "إلى زوم (أقصى 17)", "refAgl": "فوق الأرض (AGL)", "refrRadio": "راديو (k = 4/3)", "pfView": "المنطقة الظاهرة", "recalc": "↻ إعادة الحساب", "pos": "موقع الأنتينا", "pfCov": "منطقة التغطية", "eR": "الحافة اليمنى", "eL": "الحافة اليسرى", "areaL": "مساحة التغطية", "off": "وضع أوفلاين", "pfClear": "مسح المحفوظ", "dlKml": "⬇ تحميل KML", "bw": "عرض الحزمة", "refr": "الانكسار", "pfGo": "⬇ تحميل", "zFrom": "من زوم", "eC": "المركز", "rg": "المدى", "pfStop": "إيقاف", "copy": "نسخ", "appTitle": "تغطية الأنتينا", "km": "كم", "m": "م", "full360": "تغطية كاملة 360°", "chord": "وتر", "arcW": "قوس", "refHint_agl": "بالقدم (ft) فوق سطح الأرض اللي تحت الدرون، يعني الدرون يلحق شكل الأرض (Terrain following).", "refHint_rel": "بالقدم (ft) فوق أرض موقع الأنتينا، والارتفاع ثابت طول الرحلة، زي Relative في Mission Planner. لو الأرض أعلى من الدرون ينحسب محجوب.", "refHint_msl": "بالقدم (ft) فوق مستوى سطح البحر، والارتفاع ثابت طول الرحلة، زي Up in the Air في HeyWhatsThat.", "pfStopped": " — تم الإيقاف", "pfFail": " — ما قدر يحمّل (تأكد من الإنترنت)", "pfDone": " — خلص ✓", "near": "قريب", "far": "بعيد", "computing": "يحسب…", "losOffline": "وضع أوفلاين: التضاريس لهالمنطقة مو محفوظة. احسبها مرة وأنت متصل.", "losNet": "ما قدرت أحمّل التضاريس. تأكد من الإنترنت.", "sector": "القطاع", "circle": "الدايرة", "visEnd": "مرئي لين نهاية المدى", "layerSat": "ستالايت", "layerStreets": "شوارع", "layerLabels": "أسماء المدن", "fitTitle": "عرض التغطية كاملة", "fullTitle": "ملء الشاشة", "moveTitle": "نقل الأنتينا باللمس", "tileErr": "صور الستالايت ما تتحمل هنا. افتح الملف في متصفح Chrome أو Edge مع إنترنت عشان تطلع الخريطة. الرسم اللي تحت شغال عادي.", "moveOn": "نقل الأنتينا شغال: المس الخريطة لتحديد الموقع.", "moveOff": "نقل الأنتينا مقفل.", "noMap": "خريطة الستالايت تشتغل لما تفتح ملف sector_map.html في متصفح مع إنترنت. هنا يظهر الرسم بس.", "copied": "تم النسخ ✓", "copyManual": "حدد النص وانسخه يدويًا", "offNote": "وضع أوفلاين: الصور من التخزين بس، والأماكن اللي ما حمّلتها بتطلع فاضية.", "pfClearConfirm": "متأكد؟ اضغط مرة ثانية", "langBtn": "English"},{lr:h=>`${h}° يمين + ${h}° يسار`,
+  pfEst:(n,size,over,max)=>`تقريبًا ${n} صورة (~${size})`+(over?` — كثير! الحد ${max}، قلل الزوم أو المنطقة`:''),
+  pfSaved:n=>`المحفوظ حاليًا: ${n} صورة`,
+  pfTick:(d,t,g,f)=>`${d} / ${t} — جديد ${g}، فشل ${f}`,
+  demLoad:(l,d,t)=>`تحميل التضاريس (${l})… ${d} / ${t}`,
+  pct:p=>`يحسب… ${p}%`,
+  losReady:(nr,rn,fr,miss,g0)=>`التضاريس جاهزة (دقة ${nr} م لين ${rn} كم`+(fr?`، و${fr} م بعدها)`:')')+(miss?` — ناقص ${miss} قطعة`:'')+` · ارتفاع الأرض عند الأنتينا ${g0} م`,
+  losInfo:(p,where,first)=>`مرئي ${p}% من ${where} · على خط الاتجاه ${first===null?'مرئي لين نهاية المدى':'أول حجب بعد '+first+' كم'}`,
+  downloaded:n=>'تم التحميل: '+n,})};
+let LANG='en'; try{ LANG=localStorage.getItem('lang')==='ar'?'ar':'en'; }catch{}
+function t(k,...a){ const v=(I18N[LANG]||I18N.en)[k]; return typeof v==='function'?v(...a):(v??k); }
+let losLastStat=null;
+function setStat(k,...a){ losLastStat=[k,a]; $('losStat').textContent=t(k,...a); }
 const $=id=>document.getElementById(id);
 const R_EARTH=6371.0088, rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
 let fmt='kml';
@@ -316,12 +339,12 @@ function update(){
   const bw=+$('bw').value, az=+$('az').value;
   let km=parseFloat($('rgN').value); if(!(km>0)) km=1;
   const lat=parseFloat($('lat').value)||0, lon=parseFloat($('lon').value)||0;
-  $('bwV').textContent=bw+'°'; $('azV').textContent=az+'°'; $('rgV').textContent=km+' كم';
-  $('bwHint').textContent= bw>=360 ? 'تغطية كاملة 360°' : `${(bw/2).toFixed(1)}° يمين + ${(bw/2).toFixed(1)}° يسار`;
+  $('bwV').textContent=bw+'°'; $('azV').textContent=az+'°'; $('rgV').textContent=km+' '+t('km');
+  $('bwHint').textContent= bw>=360 ? t('full360') : t('lr',(bw/2).toFixed(1));
   document.querySelectorAll('#bwP button').forEach(b=>b.classList.toggle('on',+b.dataset.v===bw));
   const e=(a)=>{const p=dest(lat,lon,a,km);return `${norm(a).toFixed(1)}° → ${f5(p[0])}, ${f5(p[1])}`};
   $('eR').textContent=e(az+bw/2); $('eC').textContent=e(az); $('eL').textContent=e(az-bw/2);
-  $('arc').textContent= bw>=360?'—': `${(2*km*Math.sin(rad(Math.min(bw,180)/2))).toFixed(1)} km (وتر) · ${(km*rad(bw)).toFixed(1)} km (قوس)`;
+  $('arc').textContent= bw>=360?'—': `${(2*km*Math.sin(rad(Math.min(bw,180)/2))).toFixed(1)} km (${t('chord')}) · ${(km*rad(bw)).toFixed(1)} km (${t('arcW')})`;
   $('area').textContent=`${(Math.PI*km*km*bw/360).toLocaleString('en',{maximumFractionDigits:1})} km²`;
   draw(az,bw,km);
   const pts=sectorPoints(lat,lon,az,bw,km);
@@ -373,23 +396,23 @@ let pfArea='cov', pfRun=false;
 function zr(){let a=Math.max(1,Math.min(17,parseInt($('zFrom').value)||1)),b=Math.max(1,Math.min(17,parseInt($('zTo').value)||1));return a<=b?[a,b]:[b,a]}
 function pfEstimate(){
   const [a,b]=zr(), n=tileCount(pfBounds(),a,b), mb=n*25/1024;
-  $('pfEst').textContent=`تقريبًا ${n.toLocaleString('en')} صورة (~${mb<1024?mb.toFixed(0)+' MB':(mb/1024).toFixed(1)+' GB'})`+(n>MAX_TILES?` — كثير! الحد ${MAX_TILES.toLocaleString('en')}، قلل الزوم أو المنطقة`:'');
+  $('pfEst').textContent=t('pfEst',n.toLocaleString('en'),mb<1024?mb.toFixed(0)+' MB':(mb/1024).toFixed(1)+' GB',n>MAX_TILES,MAX_TILES.toLocaleString('en'));
   $('pfEst').style.color=n>MAX_TILES?'#f85149':'';
   return n;
 }
-async function pfStatus(){ $('pfStat').textContent=`المحفوظ حاليًا: ${(await tCount()).toLocaleString('en')} صورة`; }
+async function pfStatus(){ $('pfStat').textContent=t('pfSaved',(await tCount()).toLocaleString('en')); }
 async function prefetch(){
   if(pfRun) return; const [a,b]=zr(), bd=pfBounds(), total=tileCount(bd,a,b);
   if(total>MAX_TILES){pfEstimate();return}
   try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch{}
   pfRun=true; let done=0, got=0, fail=0; const it=tilesIn(bd,a,b);
-  const tick=()=>{$('pfBar').style.width=(100*done/total)+'%';$('pfStat').textContent=`${done.toLocaleString('en')} / ${total.toLocaleString('en')} — جديد ${got}، فشل ${fail}`};
+  const tick=()=>{$('pfBar').style.width=(100*done/total)+'%';$('pfStat').textContent=t('pfTick',done.toLocaleString('en'),total.toLocaleString('en'),got,fail)};
   async function worker(){ for(;;){ if(!pfRun) return; const n=it.next(); if(n.done) return; const [z,x,y]=n.value, k=z+'/'+x+'/'+y;
     try{ if(!(await tHas(k))){ const r=await fetch(satUrl(z,x,y)); if(!r.ok) throw r.status; await tPut(k,await r.blob()); got++; } }catch(e){ fail++; }
     done++; if(done%10===0||done===total) tick(); } }
   tick(); await Promise.all(Array.from({length:6},worker));
   const stopped=!pfRun; pfRun=false; tick();
-  $('pfStat').textContent+= stopped?' — تم الإيقاف':(fail&&!got?' — ما قدر يحمّل (تأكد من الإنترنت)':' — خلص ✓');
+  $('pfStat').textContent+= stopped?t('pfStopped'):(fail&&!got?t('pfFail'):t('pfDone'));
 }
 
 // ===== مدى الرؤية (Line of Sight) =====
@@ -422,11 +445,11 @@ async function loadDem(z,lat,lon,km,gen,label){
   for(let x=x1;x<=x2;x++)for(let y=y1;y<=y2;y++)list.push([x,y]);
   const tiles=new Map(); let done=0, miss=0;
   const need=list.filter(t=>!demMem.has('dem/'+z+'/'+t[0]+'/'+t[1])).length;
-  if(need) $('losStat').textContent=`تحميل التضاريس (${label})… 0 / ${list.length}`;
+  if(need) setStat('demLoad',t(label),0,list.length);
   const q=list.slice();
-  await Promise.all(Array.from({length:6},async()=>{for(;;){const t=q.shift(); if(!t||gen!==losGen)return;
-    try{const e=await demTile(z,t[0],t[1]); if(e)tiles.set(t[0]*1048576+t[1],e); else miss++;}catch{miss++}
-    done++; if(need) $('losStat').textContent=`تحميل التضاريس (${label})… ${done} / ${list.length}`;}}));
+  await Promise.all(Array.from({length:6},async()=>{for(;;){const tl=q.shift(); if(!tl||gen!==losGen)return;
+    try{const e=await demTile(z,tl[0],tl[1]); if(e)tiles.set(tl[0]*1048576+tl[1],e); else miss++;}catch{miss++}
+    done++; if(need) setStat('demLoad',t(label),done,list.length);}}));
   const N2=256*2**z, TW=x2-x1+1, TH=y2-y1+1, grid=new Array(TW*TH).fill(null);
   for(let x=x1;x<=x2;x++)for(let y=y1;y<=y2;y++){ const t=tiles.get(x*1048576+y); if(t) grid[(y-y1)*TW+(x-x1)]=t; }
   const X0=x1*256, Y0=y1*256, GW=TW*256, GH=TH*256;
@@ -440,12 +463,12 @@ async function loadDem(z,lat,lon,km,gen,label){
 const NEAR_KM=10, NEAR_Z=13;
 async function losCompute(){
   const gen=++losGen, stale=()=>gen!==losGen, lat=parseFloat($('lat').value)||0, lon=parseFloat($('lon').value)||0, km=parseFloat($('rgN').value)||1;
-  losBusy=true; $('losStat').textContent='يحسب…';
+  losBusy=true; setStat('computing');
   try{
     // قريب من الأنتينا: أعلى دقة (التلال الصغيرة حول الأنتينا هي اللي تحجب غالبًا)
-    const rnKm=Math.min(km,NEAR_KM), near=await loadDem(NEAR_Z,lat,lon,rnKm,gen,'قريب');
+    const rnKm=Math.min(km,NEAR_KM), near=await loadDem(NEAR_Z,lat,lon,rnKm,gen,'near');
     if(stale()) return;
-    const zf=demZoom(km,lat), far = km>NEAR_KM ? await loadDem(zf,lat,lon,km,gen,'بعيد') : near;
+    const zf=demZoom(km,lat), far = km>NEAR_KM ? await loadDem(zf,lat,lon,km,gen,'far') : near;
     if(stale()) return;
     if(!near.ok && !far.ok) throw new Error(OFF?'offline':'net');
     const R=km*1000, rn=rnKm*1000;
@@ -458,15 +481,15 @@ async function losCompute(){
     const sD=new Float64Array(N), cD=new Float64Array(N);
     for(let i=1;i<N;i++){ const a=D[i]/RE; sD[i]=Math.sin(a); cD[i]=Math.cos(a); }
     let tY=performance.now();
-    for(let r=0;r<NR;r++){ if(performance.now()-tY>40){ await new Promise(res=>setTimeout(res,0)); if(stale()) return; tY=performance.now(); $('losStat').textContent=`يحسب… ${Math.round(100*r/NR)}%`; }
+    for(let r=0;r<NR;r++){ if(performance.now()-tY>40){ await new Promise(res=>setTimeout(res,0)); if(stale()) return; tY=performance.now(); setStat('pct',Math.round(100*r/NR)); }
       const b=r*2*Math.PI/NR, sb=Math.sin(b), cb=Math.cos(b), o=r*N;
       for(let i=1;i<N;i++){ const sp2=sp1*cD[i]+cp1*sD[i]*cb, p2=Math.asin(sp2), l2=l1+Math.atan2(sb*sD[i]*cp1, cD[i]-sp1*sp2);
         G[o+i]=(i<=Nn?near:far).elev(p2*180/Math.PI, l2*180/Math.PI); } }
     LOS={lat,lon,km,N,D,Nn,rn,dsn,dsf,G,g0,nr:NR,vis:new Uint8Array(NR*N),key:lat+','+lon+','+km};
     const miss=near.miss+(far!==near?far.miss:0);
-    $('losStat').textContent=`التضاريس جاهزة (دقة ${Math.round(near.pxM)} م لين ${rnKm} كم`+(km>NEAR_KM?`، و${Math.round(far.pxM)} م بعدها)`:')')+(miss?` — ناقص ${miss} قطعة`:'')+` · ارتفاع الأرض عند الأنتينا ${Math.round(g0)} م`;
+    setStat('losReady',Math.round(near.pxM),rnKm,km>NEAR_KM?Math.round(far.pxM):0,miss,Math.round(g0));
     losRun();
-  }catch(e){ if(stale()) return; $('losStat').textContent= String(e.message)==='offline'?'وضع أوفلاين: التضاريس لهالمنطقة مو محفوظة. احسبها مرة وأنت متصل.':'ما قدرت أحمّل التضاريس. تأكد من الإنترنت.'; }
+  }catch(e){ if(stale()) return; setStat(String(e.message)==='offline'?'losOffline':'losNet'); }
   finally{ if(!stale()) losBusy=false; }
 }
 function losIdx(dist){ const {Nn,rn,dsn,dsf,N}=LOS; return Math.min(N-1, dist<=rn ? Math.round(dist/dsn) : Nn+Math.round((dist-rn)/dsf)); }
@@ -509,7 +532,7 @@ function losRender(){
   layers.forEach(l=>{l.addTo(map); l.bringToBack();}); losOverlay=layers;
   // على خط الاتجاه
   const r0=Math.round(norm(az)*NRAY/360)%NRAY; let first=-1; for(let i=1;i<N;i++){ if(!vis[r0*N+i]){first=i;break} }
-  $('losInfo').textContent=`مرئي ${tot?Math.round(100*ok/tot):0}% من ${onlySec?'القطاع':'الدايرة'} · على خط الاتجاه ${first<0?'مرئي لين نهاية المدى':'أول حجب بعد '+(D[first]/1000).toFixed(2)+' كم'}`;
+  $('losInfo').textContent=t('losInfo',tot?Math.round(100*ok/tot):0,t(onlySec?'sector':'circle'),first<0?null:(D[first]/1000).toFixed(2));
 }
 let losRAF=0;
 function losRun(){ if(!LOS||!mapOK||losRAF) return; losRAF=requestAnimationFrame(()=>{ losRAF=0; losVisibility(); losRender(); }); }
@@ -521,7 +544,7 @@ function losOnUpdate(lat,lon,km){
 let losAuto=0;
 
 // ===== الخريطة =====
-let sat,labels_,map,sector,axis,rings,compass,ant,mapOK=false;
+let layerCtl,streets_,sat,labels_,map,sector,axis,rings,compass,ant,mapOK=false;
 let lastKey='', noFit=false;
 function initMap(){
 map=L.map('map',{zoomControl:true,maxZoom:21});
@@ -531,14 +554,14 @@ sat=new CachedLayer(SAT_URL,
 labels_=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:21,maxNativeZoom:17}).addTo(map);
 const streets=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:21,maxNativeZoom:19,attribution:'© OpenStreetMap'});
-L.control.layers({'ستالايت':sat,'شوارع':streets},{'أسماء المدن':labels_}).addTo(map);
+layerCtl=L.control.layers({[t('layerSat')]:sat,[t('layerStreets')]:streets},{[t('layerLabels')]:labels_}).addTo(map); streets_=streets;
 L.control.scale({imperial:false}).addTo(map);
 const FitCtl=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar');
-  b.href='#';b.title='عرض التغطية كاملة';b.innerHTML='⤢';b.style.cssText='display:block;width:34px;height:34px;line-height:34px;text-align:center;background:#fff;color:#000;font-size:20px;text-decoration:none';
+  b.href='#';b.title=t('fitTitle'); b.dataset.i18nTitle='fitTitle';b.innerHTML='⤢';b.style.cssText='display:block;width:34px;height:34px;line-height:34px;text-align:center;background:#fff;color:#000;font-size:20px;text-decoration:none';
   L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);L.DomEvent.stopPropagation(e);fitAll()});return b}});
 new FitCtl().addTo(map);
 const FullCtl=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar');
-  b.href='#';b.title='ملء الشاشة';b.innerHTML='⛶';b.style.cssText='display:block;width:34px;height:34px;line-height:34px;text-align:center;background:#fff;color:#000;font-size:20px;text-decoration:none';
+  b.href='#';b.title=t('fullTitle'); b.dataset.i18nTitle='fullTitle';b.innerHTML='⛶';b.style.cssText='display:block;width:34px;height:34px;line-height:34px;text-align:center;background:#fff;color:#000;font-size:20px;text-decoration:none';
   L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);L.DomEvent.stopPropagation(e);$('mapCard').classList.toggle('full');setTimeout(()=>map.invalidateSize(),50)});return b}});
 new FullCtl().addTo(map);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('mapCard').classList.contains('full')){$('mapCard').classList.remove('full');setTimeout(()=>map.invalidateSize(),50)}});
@@ -549,13 +572,13 @@ compass=L.layerGroup().addTo(map);
 ant=L.marker([0,0],{draggable:true,icon:L.divIcon({className:'',html:'<div style="width:16px;height:16px;border-radius:50%;background:#58a6ff;border:3px solid #fff;box-shadow:0 0 6px #000"></div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(map);
 let tileErr=0,tileOK=false;
 sat.on('tileload',()=>{tileOK=true});
-sat.on('tileerror',()=>{if(tileOK||OFF)return;if(++tileErr===3){$('plotCard').style.display='';}if(tileErr===3)$('mapNote').textContent='صور الستالايت ما تتحمل هنا. افتح الملف في متصفح Chrome أو Edge مع إنترنت عشان تطلع الخريطة. الرسم اللي تحت شغال عادي.'});
+sat.on('tileerror',()=>{if(tileOK||OFF)return;if(++tileErr===3){$('plotCard').style.display='';}if(tileErr===3)$('mapNote').textContent=t('tileErr')});
 const MOBILE=matchMedia('(max-width:859px), (pointer:coarse)').matches;
 let tapMove=false;
 const MoveCtl=L.Control.extend({options:{position:'topleft'},onAdd(){const b=L.DomUtil.create('a','leaflet-bar lockBtn'+(tapMove?' on':''));
-  b.href='#';b.title='نقل الأنتينا باللمس';b.innerHTML='📍';
+  b.href='#';b.title=t('moveTitle'); b.dataset.i18nTitle='moveTitle';b.innerHTML='📍';
   L.DomEvent.on(b,'click',e=>{L.DomEvent.preventDefault(e);L.DomEvent.stopPropagation(e);tapMove=!tapMove;b.classList.toggle('on',tapMove);
-    $('mapNote').textContent=tapMove?'نقل الأنتينا شغال: المس الخريطة لتحديد الموقع.':'نقل الأنتينا مقفل.';setTimeout(()=>{if(!OFF)$('mapNote').textContent=''},2500)});return b}});
+    $('mapNote').textContent=t(tapMove?'moveOn':'moveOff');setTimeout(()=>{if(!OFF)$('mapNote').textContent=''},2500)});return b}});
 new MoveCtl().addTo(map);
 map.on('click',e=>{if(tapMove)setPos(e.latlng)});
 let dragT=0;
@@ -590,7 +613,7 @@ function drawMap(lat,lon,az,km,pts){
 function fitAll(){const la=parseFloat($('lat').value)||0,lo=parseFloat($('lon').value)||0,k=parseFloat($('rgN').value)||1;map.fitBounds(L.latLng(la,lo).toBounds(k*2500),{padding:[10,10]});}
 function setPos(ll){ $('lat').value=ll.lat.toFixed(5); $('lon').value=ll.lng.toFixed(5); noFit=true; update(); }
 
-try{ if(window.L) initMap(); else throw 0; }catch(e){ $('mapCard').style.display='none'; $('plotNote').textContent='خريطة الستالايت تشتغل لما تفتح ملف sector_map.html في متصفح مع إنترنت. هنا يظهر الرسم بس.'; }
+try{ if(window.L) initMap(); else throw 0; }catch(e){ $('mapCard').style.display='none'; $('plotNote').textContent=t('noMap'); }
 
 // presets
 [10,15,30,40,60,90,120,360].forEach(v=>{
@@ -610,7 +633,7 @@ function fname(ext){return `antenna_az${$('az').value}_bw${$('bw').value}_${pars
 function save(text,name,type){
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
   document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
-  $('msg').textContent='تم التحميل: '+name; setTimeout(()=>$('msg').textContent='',3000);
+  $('msg').textContent=t('downloaded',name); setTimeout(()=>$('msg').textContent='',3000);
 }
 function curPts(){const bw=+$('bw').value,az=+$('az').value,km=parseFloat($('rgN').value)||1;
   return {bw,az,km,pts:sectorPoints(parseFloat($('lat').value)||0,parseFloat($('lon').value)||0,az,bw,km)}}
@@ -618,8 +641,8 @@ $('dlKml').onclick=()=>{const c=curPts(); save(kml(c.pts,c.az,c.bw,c.km),fname('
 $('dlPoly').onclick=()=>{const c=curPts(); const ring=c.pts.slice(0,-1);
   save('#saved by Mission Planner\r\n'+ring.map(p=>`${p[0].toFixed(7)} ${p[1].toFixed(7)}`).join('\r\n')+'\r\n',fname('poly'),'text/plain')};
 $('copy').onclick=async()=>{
-  try{await navigator.clipboard.writeText($('out').value);$('msg').textContent='تم النسخ ✓'}
-  catch{ $('out').select(); $('msg').textContent='حدد النص وانسخه يدويًا'; }
+  try{await navigator.clipboard.writeText($('out').value);$('msg').textContent=t('copied')}
+  catch{ $('out').select(); $('msg').textContent=t('copyManual'); }
   setTimeout(()=>$('msg').textContent='',2500);
 };
 update();
@@ -632,27 +655,40 @@ document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>setAlt((parseFloa
 $('mast').oninput=losRun;
 document.querySelectorAll('#refrK [data-k]').forEach(b=>b.onclick=()=>{ K_REF=+b.dataset.k;
   document.querySelectorAll('#refrK [data-k]').forEach(x=>x.classList.toggle('on',x===b)); losRun(); });
-const REF_HINT={agl:'بالقدم (ft) فوق سطح الأرض اللي تحت الدرون، يعني الدرون يلحق شكل الأرض (Terrain following).',
-  rel:'بالقدم (ft) فوق أرض موقع الأنتينا، والارتفاع ثابت طول الرحلة، زي Relative في Mission Planner. لو الأرض أعلى من الدرون ينحسب محجوب.',
-  msl:'بالقدم (ft) فوق مستوى سطح البحر، والارتفاع ثابت طول الرحلة، زي Up in the Air في HeyWhatsThat.'};
+const REF_HINT={agl:'refHint_agl',rel:'refHint_rel',msl:'refHint_msl'};
 document.querySelectorAll('#altRef [data-ref]').forEach(b=>b.onclick=()=>{ ALT_REF=b.dataset.ref;
-  document.querySelectorAll('#altRef [data-ref]').forEach(x=>x.classList.toggle('on',x===b)); $('altRefHint').textContent=REF_HINT[ALT_REF]; losRun(); }); $('losIsl').onchange=losRun; $('losOn').onchange=()=>{ if($('losOn').checked){ if(LOS) losRender(); else losCompute(); } else losRender(); }; $('losSector').onchange=losRender;
+  document.querySelectorAll('#altRef [data-ref]').forEach(x=>x.classList.toggle('on',x===b)); $('altRefHint').textContent=t(REF_HINT[ALT_REF]); losRun(); }); $('losIsl').onchange=losRun; $('losOn').onchange=()=>{ if($('losOn').checked){ if(LOS) losRender(); else losCompute(); } else losRender(); }; $('losSector').onchange=losRender;
 $('losGo').onclick=losCompute;
 if(mapOK && $('losOn').checked) setTimeout(losCompute,300);
 $('altV').textContent=$('altN').value+' ft';
 if(!mapOK) $('losCard').style.display='none';
 
 // offline UI
-$('offMode').onchange=()=>{OFF=$('offMode').checked; if(mapOK){ if(OFF){map.removeLayer(labels_)}else{labels_.addTo(map)} sat.redraw(); } $('mapNote').textContent=OFF?'وضع أوفلاين: الصور من التخزين بس، والأماكن اللي ما حمّلتها بتطلع فاضية.':''; };
+$('offMode').onchange=()=>{OFF=$('offMode').checked; if(mapOK){ if(OFF){map.removeLayer(labels_)}else{labels_.addTo(map)} sat.redraw(); } $('mapNote').textContent=OFF?t('offNote'):''; };
 $('areaCov').onclick=()=>{pfArea='cov';$('areaCov').classList.add('on');$('areaView').classList.remove('on');pfEstimate()};
 $('areaView').onclick=()=>{pfArea='view';$('areaView').classList.add('on');$('areaCov').classList.remove('on');pfEstimate()};
 ['zFrom','zTo','rgN','lat','lon'].forEach(id=>$(id).addEventListener('input',pfEstimate));
 $('pfGo').onclick=prefetch; $('pfStop').onclick=()=>{pfRun=false};
-$('pfClear').onclick=async()=>{ if($('pfClear').dataset.c!=='1'){$('pfClear').dataset.c='1';$('pfClear').textContent='متأكد؟ اضغط مرة ثانية';setTimeout(()=>{$('pfClear').dataset.c='';$('pfClear').textContent='مسح المحفوظ'},3000);return}
-  $('pfClear').dataset.c='';$('pfClear').textContent='مسح المحفوظ'; await tClear(); pfStatus(); if(mapOK)sat.redraw(); };
+$('pfClear').onclick=async()=>{ if($('pfClear').dataset.c!=='1'){$('pfClear').dataset.c='1';$('pfClear').textContent=t('pfClearConfirm');setTimeout(()=>{$('pfClear').dataset.c='';$('pfClear').textContent=t('pfClear')},3000);return}
+  $('pfClear').dataset.c='';$('pfClear').textContent=t('pfClear'); await tClear(); pfStatus(); if(mapOK)sat.redraw(); };
 if(mapOK){ map.on('moveend',()=>{if(pfArea==='view')pfEstimate()}); }
 if(!window.indexedDB){ $('offCard').style.display='none'; }
 pfEstimate(); pfStatus();
+
+// ===== تطبيق اللغة =====
+function applyLang(){
+  document.documentElement.lang=LANG; document.documentElement.dir=LANG==='ar'?'rtl':'ltr';
+  document.title=t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>el.title=t(el.dataset.i18nTitle));
+  $('langBtn').textContent=t('langBtn');
+  $('altRefHint').textContent=t(REF_HINT[ALT_REF]);
+  if(losLastStat) $('losStat').textContent=t(losLastStat[0],...losLastStat[1]);
+  if(mapOK && layerCtl){ map.removeControl(layerCtl); layerCtl=L.control.layers({[t('layerSat')]:sat,[t('layerStreets')]:streets_},{[t('layerLabels')]:labels_}).addTo(map); }
+  update(); pfEstimate(); pfStatus(); if(LOS&&mapOK) losRender();
+}
+$('langBtn').onclick=()=>{ LANG=LANG==='ar'?'en':'ar'; try{localStorage.setItem('lang',LANG)}catch{} applyLang(); };
+applyLang();
 </script>
 </body>
 </html>
