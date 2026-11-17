@@ -389,7 +389,7 @@ async function demTile(z,x,y){
   if(!blob){ if(OFF) return null; const r=await fetch(DEM_URL(z,x,y)); if(!r.ok) throw new Error('dem '+r.status); blob=await r.blob(); try{await tPut(k,blob)}catch{} }
   const bmp=await createImageBitmap(blob); const c=document.createElement('canvas'); c.width=c.height=256;
   const cx=c.getContext('2d'); cx.drawImage(bmp,0,0); const d=cx.getImageData(0,0,256,256).data; const e=new Float32Array(65536);
-  for(let i=0;i<65536;i++) e[i]=d[i*4]*256+d[i*4+1]+d[i*4+2]/256-32768;
+  for(let i=0;i<65536;i++){ const v=d[i*4]*256+d[i*4+1]+d[i*4+2]/256-32768; e[i]=v<0?0:v; } // البحر = مستوى سطح الماء (البيانات فيها عمق البحر)
   if(demMem.size>MAX_DEM_TILES+50) demMem.clear(); demMem.set(k,e);
   return e;
 }
