@@ -129,7 +129,12 @@
             <button class="btn" data-a="50">+50</button>
           </div>
         </div>
-        <div class="hint">بالقدم (ft) فوق سطح الأرض اللي تحت الدرون (AGL).</div>
+        <div class="presets" style="margin-top:8px" id="altRef">
+          <button class="btn on" data-ref="agl">فوق الأرض (AGL)</button>
+          <button class="btn" data-ref="rel">فوق الأنتينا (Relative)</button>
+          <button class="btn" data-ref="msl">فوق سطح البحر (MSL)</button>
+        </div>
+        <div class="hint" id="altRefHint">بالقدم (ft) فوق سطح الأرض اللي تحت الدرون، يعني الدرون يلحق شكل الأرض (Terrain following).</div>
       </div>
       <div class="field">
         <label>ارتفاع الأنتينا عن الأرض (متر)</label>
@@ -382,6 +387,7 @@ async function prefetch(){
 // ===== مدى الرؤية (Line of Sight) =====
 const DEM_URL=(z,x,y)=>`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
 const K_REF=4/3, RE=6371008.8, MAX_DEM_TILES=300;
+let ALT_REF='agl';
 let LOS=null, losOverlay=null, losBusy=false, losTimer=0;
 const demMem=new Map();
 const withTO=(p,ms)=>Promise.race([p,new Promise((_,j)=>setTimeout(()=>j(new Error('timeout')),ms))]);
@@ -437,16 +443,20 @@ async function losCompute(){
       const b=r*2*Math.PI/NR, sb=Math.sin(b), cb=Math.cos(b), o=r*N;
       for(let i=1;i<N;i++){ const sp2=sp1*cD[i]+cp1*sD[i]*cb, p2=Math.asin(sp2), l2=l1+Math.atan2(sb*sD[i]*cp1, cD[i]-sp1*sp2);
         G[o+i]=elev(p2*180/Math.PI, l2*180/Math.PI) - curv[i]; } }
-    LOS={lat,lon,km,z,N,ds,G,g0,nr:NR,vis:new Uint8Array(NR*N),key:lat+','+lon+','+km};
+    LOS={lat,lon,km,z,N,ds,G,g0,curv,nr:NR,vis:new Uint8Array(NR*N),key:lat+','+lon+','+km};
     $('losStat').textContent=`التضاريس جاهزة (دقة تقريبًا ${Math.round(pxM)} م)`+(miss?` — ناقص ${miss} قطعة`:'')+` · ارتفاع الأرض عند الأنتينا ${Math.round(g0)} م`;
     losRun();
   }catch(e){ if(stale()) return; $('losStat').textContent= String(e.message)==='offline'?'وضع أوفلاين: التضاريس لهالمنطقة مو محفوظة. احسبها مرة وأنت متصل.':'ما قدرت أحمّل التضاريس. تأكد من الإنترنت.'; }
   finally{ if(!stale()) losBusy=false; }
 }
 function losVisibility(){
-  const isl=$('losIsl').checked, {N,ds,G,g0,vis,nr:NRAY}=LOS, A=Math.max(0,parseFloat($('altN').value)||0)*0.3048, H0=g0+Math.max(0,parseFloat($('mast').value)||0);
+  const isl=$('losIsl').checked, {N,ds,G,g0,curv,vis,nr:NRAY}=LOS, A=Math.max(0,parseFloat($('altN').value)||0)*0.3048, H0=g0+Math.max(0,parseFloat($('mast').value)||0);
+  // ارتفاع الدرون المطلق: AGL يلحق الأرض، Relative ثابت فوق أرض الأنتينا، MSL ثابت فوق سطح البحر
+  const fixed = ALT_REF==='rel' ? g0+A : ALT_REF==='msl' ? A : null;
   for(let r=0;r<NRAY;r++){ let m=-Infinity; const o=r*N; vis[o]=1;
-    let cut=false; for(let i=1;i<N;i++){ if(cut){vis[o+i]=0;continue} const d=i*ds, gt=G[o+i], v=((gt+A-H0)/d>=m)?1:0; vis[o+i]=v; if(!v&&!isl)cut=true; const s=(gt-H0)/d; if(s>m)m=s; } }
+    let cut=false; for(let i=1;i<N;i++){ if(cut){vis[o+i]=0;continue}
+      const d=i*ds, gt=G[o+i], tgt = fixed===null ? gt+A : fixed-curv[i];
+      const v=(tgt>=gt && (tgt-H0)/d>=m)?1:0; vis[o+i]=v; if(!v&&!isl)cut=true; const s=(gt-H0)/d; if(s>m)m=s; } }
 }
 function losRender(){
   if(losOverlay){map.removeLayer(losOverlay);losOverlay=null}
@@ -587,7 +597,12 @@ function setAlt(v){ v=Math.max(0,v); $('altN').value=v; if(v<=6000)$('alt').valu
 $('alt').oninput=()=>setAlt(+$('alt').value);
 $('altN').oninput=()=>{const v=parseFloat($('altN').value); if(v>=0){ if(v<=6000)$('alt').value=v; $('altV').textContent=v+' ft'; losRun(); }};
 document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>setAlt((parseFloat($('altN').value)||0)+(+b.dataset.a)));
-$('mast').oninput=losRun; $('losIsl').onchange=losRun; $('losOn').onchange=()=>{ if($('losOn').checked){ if(LOS) losRender(); else losCompute(); } else losRender(); }; $('losSector').onchange=losRender;
+$('mast').oninput=losRun;
+const REF_HINT={agl:'بالقدم (ft) فوق سطح الأرض اللي تحت الدرون، يعني الدرون يلحق شكل الأرض (Terrain following).',
+  rel:'بالقدم (ft) فوق أرض موقع الأنتينا، والارتفاع ثابت طول الرحلة، زي Relative في Mission Planner. لو الأرض أعلى من الدرون ينحسب محجوب.',
+  msl:'بالقدم (ft) فوق مستوى سطح البحر، والارتفاع ثابت طول الرحلة، زي Up in the Air في HeyWhatsThat.'};
+document.querySelectorAll('#altRef [data-ref]').forEach(b=>b.onclick=()=>{ ALT_REF=b.dataset.ref;
+  document.querySelectorAll('#altRef [data-ref]').forEach(x=>x.classList.toggle('on',x===b)); $('altRefHint').textContent=REF_HINT[ALT_REF]; losRun(); }); $('losIsl').onchange=losRun; $('losOn').onchange=()=>{ if($('losOn').checked){ if(LOS) losRender(); else losCompute(); } else losRender(); }; $('losSector').onchange=losRender;
 $('losGo').onclick=losCompute;
 if(mapOK && $('losOn').checked) setTimeout(losCompute,300);
 $('altV').textContent=$('altN').value+' ft';
